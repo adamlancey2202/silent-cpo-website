@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { isDatabaseConfigured } from "@/lib/database-url";
 import { db } from "@/lib/db";
 import { sendContactNotification } from "@/lib/mailersend";
 import { isTurnstileConfigured, verifyTurnstileToken } from "@/lib/turnstile";
@@ -16,6 +17,16 @@ const contactSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    if (!isDatabaseConfigured()) {
+      console.error(
+        "[Contact] No database URL — set POSTGRES_PRISMA_URL in Vercel (Neon integration) and remove any empty DATABASE_URL"
+      );
+      return NextResponse.json(
+        { error: "Service temporarily unavailable" },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const data = contactSchema.parse(body);
 

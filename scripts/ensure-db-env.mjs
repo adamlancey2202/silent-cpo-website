@@ -4,13 +4,13 @@
  */
 import { spawnSync } from "node:child_process";
 
-const URL_KEYS = ["DATABASE_URL", "POSTGRES_PRISMA_URL", "POSTGRES_URL"];
+const URL_KEYS = ["POSTGRES_PRISMA_URL", "POSTGRES_URL", "DATABASE_URL"];
 
 function ensureDbEnv() {
-  if (process.env.DATABASE_URL?.trim()) return;
   for (const key of URL_KEYS) {
     const value = process.env[key]?.trim();
     if (value) {
+      process.env.POSTGRES_PRISMA_URL = value;
       process.env.DATABASE_URL = value;
       return;
     }

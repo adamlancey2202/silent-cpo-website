@@ -70,7 +70,7 @@ export const PLATFORM_PROVIDERS: PlatformProvider[] = [
     usedFor: "Production database for enquiries, Stripe records, and admin data.",
     costHint: "Compute hours and storage. SQLite is local-only — Neon required on Vercel.",
     check: "Add via Vercel Storage → Neon. DATABASE_URL is injected automatically.",
-    envKeys: ["DATABASE_URL"],
+    envKeys: ["POSTGRES_PRISMA_URL", "DATABASE_URL"],
     links: [
       { label: "Dashboard", href: "https://console.neon.tech" },
       { label: "Usage", href: "https://console.neon.tech/app/settings/billing" },

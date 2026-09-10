@@ -1,8 +1,8 @@
-/** Neon on Vercel often injects POSTGRES_* instead of DATABASE_URL. */
+/** Neon on Vercel injects POSTGRES_* — sync all names Prisma/tools may read. */
 const URL_KEYS = [
-  "DATABASE_URL",
   "POSTGRES_PRISMA_URL",
   "POSTGRES_URL",
+  "DATABASE_URL",
 ] as const;
 
 export function resolveDatabaseUrl(): string {
@@ -13,10 +13,16 @@ export function resolveDatabaseUrl(): string {
   return "";
 }
 
-/** Call before PrismaClient is created. */
+/** Call before PrismaClient is created or Prisma CLI runs. */
 export function ensureDatabaseUrl(): void {
   const resolved = resolveDatabaseUrl();
-  if (resolved) {
-    process.env.DATABASE_URL = resolved;
-  }
+  if (!resolved) return;
+
+  process.env.POSTGRES_PRISMA_URL = resolved;
+  process.env.DATABASE_URL = resolved;
+}
+
+export function isDatabaseConfigured(): boolean {
+  ensureDatabaseUrl();
+  return Boolean(resolveDatabaseUrl());
 }
