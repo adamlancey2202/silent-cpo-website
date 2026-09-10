@@ -1,15 +1,19 @@
 /**
- * Map Neon/Vercel env vars, then run a command with those vars applied.
+ * Neon on Vercel injects POSTGRES_* vars — Prisma expects DATABASE_URL.
  * Usage: node scripts/ensure-db-env.mjs prisma generate
  */
 import { spawnSync } from "node:child_process";
 
+const URL_KEYS = ["DATABASE_URL", "POSTGRES_PRISMA_URL", "POSTGRES_URL"];
+
 function ensureDbEnv() {
-  if (!process.env.DATABASE_URL?.trim()) {
-    const pooled =
-      process.env.POSTGRES_PRISMA_URL?.trim() ||
-      process.env.POSTGRES_URL?.trim();
-    if (pooled) process.env.DATABASE_URL = pooled;
+  if (process.env.DATABASE_URL?.trim()) return;
+  for (const key of URL_KEYS) {
+    const value = process.env[key]?.trim();
+    if (value) {
+      process.env.DATABASE_URL = value;
+      return;
+    }
   }
 }
 
