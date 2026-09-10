@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --color-midnight: #102a43;
+  --color-deep: #081f2c;
+  --color-bone: #f2ebdd;
+  --color-gold: #b89a62;
+  --color-green: #6f9c8c;
+  --color-mist: #dce7ed;
+
+  --font-display: "Bebas Neue", "Arial Narrow", sans-serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-deep text-bone antialiased;
+    font-family: var(--font-body);
+  }
+
+  ::selection {
+    @apply bg-gold/30 text-bone;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(184, 154, 98, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(184, 154, 98, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .corner-accent::before,
+  .corner-accent::after {
+    content: "";
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-color: var(--color-gold);
+    opacity: 0.6;
+  }
+
+  .corner-accent::before {
+    top: 0;
+    left: 0;
+    border-top: 1px solid;
+    border-left: 1px solid;
+  }
+
+  .corner-accent::after {
+    bottom: 0;
+    right: 0;
+    border-bottom: 1px solid;
+    border-right: 1px solid;
+  }
+
+  .gold-line {
+    @apply h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent;
+  }
+
+  .glass-card {
+    @apply border border-mist/10 bg-midnight/60 backdrop-blur-md;
+  }
+}

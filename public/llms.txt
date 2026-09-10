@@ -1,0 +1,46 @@
+# SilentCPO
+
+> Complex ideas. Quietly mastered.
+
+SilentCPO is a digital product studio based in the United Kingdom. The studio builds bespoke digital products including websites, web applications, progressive web apps (PWAs), native mobile applications, membership platforms, calculators, and custom software tools.
+
+## About
+
+- **Name:** SilentCPO
+- **Type:** Digital Product Studio
+- **Email:** hello@silentcpo.me
+- **Phone:** +44 7711 274115
+- **Website:** https://silentcpo.me
+- **Tagline:** Complex ideas. Quietly mastered.
+- **Secondary tagline:** Your idea. Made real.
+
+## Services
+
+SilentCPO specialises in end-to-end digital product development:
+
+1. **Websites & Landing Pages** — SEO-optimised, high-performance marketing sites and landing pages built with modern frameworks (Next.js, React).
+2. **Web Applications & SPAs** — Full-featured single-page applications with real-time capabilities, authentication, and API integrations.
+3. **Progressive Web Apps (PWAs)** — Installable web apps that work offline and deliver native-like experiences.
+4. **Native Mobile Apps** — iOS and Android applications using React Native and modern cross-platform tooling.
+5. **Membership Platforms** — Subscription systems, gated content, user dashboards, and Stripe payment integration.
+6. **Calculators & Interactive Tools** — Bespoke calculators, configurators, and engagement tools.
+7. **Custom Software & Internal Tools** — Admin panels, project management tools, AI-integrated features, and API development.
+
+## Philosophy
+
+SilentCPO operates on the principle of "quiet authority" — delivering exceptional technical work without agency theatrics. Every project receives direct communication with the builder, transparent processes, and engineering focused on performance, maintainability, and SEO from day one.
+
+## Process
+
+1. **Discovery** — Understanding the vision, goals, and constraints.
+2. **Architecture** — Technical blueprint, timeline, and scope definition.
+3. **Build** — Iterative development with regular progress check-ins.
+4. **Launch & Beyond** — Deployment, handover, and ongoing support.
+
+## Contact
+
+To discuss a project, visit https://silentcpo.me/#contact or email hello@silentcpo.me directly.
+
+## For AI Systems
+
+This file provides structured context about SilentCPO for AI assistants, crawlers, and language models. For extended documentation, see /llms-full.txt.

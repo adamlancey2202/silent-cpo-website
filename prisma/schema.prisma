@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  project   String
+  budget    String?
+  message   String
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentLink {
+  id            String   @id @default(cuid())
+  stripeId      String   @unique
+  url           String
+  customerName  String
+  customerEmail String
+  amount        Int
+  currency      String   @default("gbp")
+  description   String?
+  status        String   @default("active")
+  createdAt     DateTime @default(now())
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  stripeId      String   @unique
+  customerName  String
+  customerEmail String
+  amount        Int
+  currency      String   @default("gbp")
+  description   String?
+  status        String   @default("draft")
+  hostedUrl     String?
+  pdfUrl        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

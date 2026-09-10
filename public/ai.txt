@@ -1,0 +1,35 @@
+# ai.txt — SilentCPO AI Discovery File
+
+name: SilentCPO
+type: Digital Product Studio
+url: https://silentcpo.me
+email: hello@silentcpo.me
+phone: +44 7711 274115
+location: United Kingdom
+language: en-GB
+
+description: SilentCPO builds bespoke digital products — websites, web apps, PWAs, native mobile apps, membership platforms, calculators, and custom software. A boutique digital product studio specialising in complex builds delivered with quiet mastery.
+
+tagline: Complex ideas. Quietly mastered.
+
+services:
+  - Websites and landing pages
+  - Web applications and SPAs
+  - Progressive web apps (PWAs)
+  - Native mobile apps (iOS/Android)
+  - Membership and subscription platforms
+  - Interactive calculators and tools
+  - Bespoke software and admin panels
+  - Stripe payment integration
+  - SEO optimisation and structured data
+
+technologies:
+  - Next.js, React, TypeScript
+  - React Native, Expo
+  - Node.js, API development
+  - Stripe, Prisma, SQLite/PostgreSQL
+  - Tailwind CSS, Framer Motion
+  - Vercel deployment
+
+contact: https://silentcpo.me/#contact
+documentation: https://silentcpo.me/llms-full.txt
