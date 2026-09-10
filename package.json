@@ -5,7 +5,7 @@
   "scripts": {
     "postinstall": "node scripts/ensure-db-env.mjs prisma generate",
     "dev": "next dev",
-    "build": "node scripts/ensure-db-env.mjs prisma generate && next build",
+    "build": "node scripts/ensure-db-env.mjs prisma generate && node scripts/ensure-db-env.mjs prisma db push --skip-generate && next build",
     "start": "next start",
     "lint": "eslint .",
     "db:push": "node scripts/ensure-db-env.mjs prisma db push",

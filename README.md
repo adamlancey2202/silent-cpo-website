@@ -106,12 +106,11 @@ Without Turnstile keys configured, the contact form still works locally (verific
 
 **Neon Postgres (via Vercel):**
 
-1. Vercel → **silent-cpo-website** → **Storage** → **Create database** → **Neon Postgres**
-2. Connect to this project — Vercel injects `DATABASE_URL` automatically
-3. **One-time:** create tables — `vercel env pull .env.local` then `npm run db:deploy`
-4. Redeploy, then `npm run dev` locally with the same pulled env file
+1. Vercel → **silent-cpo-website** → **Storage** → **Neon Postgres** → connect to project
+2. Neon injects `silencpo_POSTGRES_PRISMA_URL` (and related vars) automatically
+3. **Redeploy** — the build creates database tables automatically (no local setup needed)
 
-The Platform admin tab will show **Neon Postgres** as configured once `DATABASE_URL` is set.
+The Platform admin tab will show **Neon Postgres** as configured once Neon is connected.
 
 **Custom domain (GoDaddy → Vercel):**
 
