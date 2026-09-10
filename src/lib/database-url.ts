@@ -8,7 +8,7 @@ const STANDARD_KEYS = [
   "DATABASE_URL",
 ] as const;
 
-const PREFIXED_SUFFIXES = [
+const POOLED_SUFFIXES = [
   "POSTGRES_PRISMA_URL",
   "POSTGRES_URL",
   "DATABASE_URL",
@@ -31,7 +31,7 @@ function findPrefixedUrl(suffix: string): string | undefined {
 
 export function resolveDatabaseUrl(): string {
   // Prefixed Neon vars first — never confused with local SQLite DATABASE_URL
-  for (const suffix of PREFIXED_SUFFIXES) {
+  for (const suffix of POOLED_SUFFIXES) {
     const value = findPrefixedUrl(suffix);
     if (value) return value;
   }
