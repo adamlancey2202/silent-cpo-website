@@ -9,7 +9,7 @@ Landing page and admin backend for [SilentCPO](https://silentcpo.me).
 - **AI-readable docs** — `llms.txt`, `llms-full.txt`, and `ai.txt` for AI crawlers
 - **Contact form** — Enquiries stored in database
 - **Admin dashboard** — `/admin` for enquiries and Stripe payments
-- **Project Tool** — separate app at `../Project-Tool` for kanbans, budgets, and workflows
+- **Project Tool** — separate app at `../project tool` for kanbans, budgets, and workflows
 - **Stripe integration** — Create payment links and send invoices to customers
 
 ## Quick Start
@@ -70,7 +70,7 @@ Visit `/admin` and enter your `ADMIN_SECRET`. From there you can:
 - Create Stripe payment links for customers
 - Send Stripe invoices via email
 
-For project kanbans, budgets, and workflows, use the [Project Tool](../Project-Tool).
+For project kanbans, budgets, and workflows, use the [Project Tool](../project%20tool).
 
 ## Cloudflare Turnstile Setup
 
@@ -90,16 +90,22 @@ Without Turnstile keys configured, the contact form still works locally (verific
 3. Add `STRIPE_SECRET_KEY=sk_test_...` to `.env`
 4. For invoices, ensure your Stripe account has invoicing enabled
 
-## Deployment
+## Deployment (Vercel + GitHub)
 
-Deploy to [Vercel](https://vercel.com) or any Node.js host:
+**Repo:** [github.com/adamlancey2202/silent-cpo-website](https://github.com/adamlancey2202/silent-cpo-website)
 
-```bash
-npm run build
-npm start
-```
+1. Go to [vercel.com/new](https://vercel.com/new) and sign in with GitHub (`adamlancey2202`)
+2. Import **silent-cpo-website**
+3. Add environment variables from `.env.example` (use production values)
+4. Deploy — Vercel auto-detects Next.js
 
-For production, switch `DATABASE_URL` to PostgreSQL and update `prisma/schema.prisma` provider accordingly.
+**Production database:** SQLite does not work on Vercel. Use [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres) or [Neon](https://neon.tech), then:
+
+- Set `DATABASE_URL` to your Postgres connection string in Vercel env vars
+- Change `provider` in `prisma/schema.prisma` from `sqlite` to `postgresql`
+- Run `npm run db:push` against the production database once
+
+**Custom domain:** In Vercel project settings → Domains, add `silentcpo.me` and point DNS as instructed.
 
 ## Brand Colours
 
