@@ -9,11 +9,13 @@ import {
   FileText,
   LayoutDashboard,
   RefreshCw,
+  Layers,
 } from "lucide-react";
+import { PlatformPanel } from "@/components/admin/PlatformPanel";
 import { RevenueCards } from "@/components/admin/RevenueCards";
 import { formatMoney } from "@/lib/revenue";
 
-type Tab = "overview" | "contacts" | "payments";
+type Tab = "overview" | "contacts" | "payments" | "platform";
 
 interface Contact {
   id: string;
@@ -233,6 +235,7 @@ export default function AdminPage() {
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
     { id: "contacts", label: "Enquiries", icon: Mail },
     { id: "payments", label: "Stripe", icon: CreditCard },
+    { id: "platform", label: "Platform", icon: Layers },
   ];
 
   const inputClass =
@@ -414,6 +417,8 @@ export default function AdminPage() {
             )}
           </div>
         )}
+
+        {tab === "platform" && <PlatformPanel apiFetch={apiFetch} />}
 
         {tab === "payments" && (
           <div className="grid gap-8 lg:grid-cols-2">

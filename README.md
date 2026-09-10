@@ -40,6 +40,10 @@ Open [http://localhost:3000](http://localhost:3000) for the site, [http://localh
 | `DATABASE_URL` | Database connection string |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (public) |
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret key |
+| `MAILERSEND_API_KEY` | MailerSend API key for enquiry emails |
+| `MAILERSEND_FROM_EMAIL` | Verified sender in MailerSend |
+| `MAILERSEND_FROM_NAME` | Sender display name (optional) |
+| `CONTACT_NOTIFY_EMAIL` | Where enquiries are sent (defaults to hello@silentcpo.me) |
 
 ## Viewing Enquiries
 
@@ -69,6 +73,7 @@ Visit `/admin` and enter your `ADMIN_SECRET`. From there you can:
 - View and manage contact form enquiries
 - Create Stripe payment links for customers
 - Send Stripe invoices via email
+- **Platform** tab — third-party stack overview (Vercel, Stripe, MailerSend, Turnstile, etc.)
 
 For project kanbans, budgets, and workflows, use the [Project Tool](../project%20tool).
 

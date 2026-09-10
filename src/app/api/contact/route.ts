@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { sendContactNotification } from "@/lib/mailersend";
 import { isTurnstileConfigured, verifyTurnstileToken } from "@/lib/turnstile";
 
 const contactSchema = z.object({
@@ -49,6 +50,19 @@ export async function POST(request: Request) {
         message: data.message,
       },
     });
+
+    const emailResult = await sendContactNotification({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      project: data.project,
+      budget: data.budget,
+      message: data.message,
+    });
+
+    if (!emailResult.ok) {
+      console.warn("[Contact] enquiry saved but email not sent:", emailResult.error);
+    }
 
     return NextResponse.json({ success: true, id: contact.id });
   } catch (error) {
