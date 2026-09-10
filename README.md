@@ -64,7 +64,7 @@ npm run db:studio
 
 Opens a visual database editor at [http://localhost:5555](http://localhost:5555). Click the **Contact** table to browse, edit, or export enquiry records.
 
-The database file lives at `prisma/dev.db` locally. On production (Vercel), use a hosted database (e.g. Vercel Postgres, Turso) and update `DATABASE_URL`.
+The database is **Neon Postgres** (connected via Vercel → Storage → Neon). Pull env vars locally with `vercel env pull .env.local` after connecting the integration.
 
 ## Admin Dashboard
 
@@ -104,13 +104,26 @@ Without Turnstile keys configured, the contact form still works locally (verific
 3. Add environment variables from `.env.example` (use production values)
 4. Deploy — Vercel auto-detects Next.js
 
-**Production database:** SQLite does not work on Vercel. Use [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres) or [Neon](https://neon.tech), then:
+**Neon Postgres (via Vercel):**
 
-- Set `DATABASE_URL` to your Postgres connection string in Vercel env vars
-- Change `provider` in `prisma/schema.prisma` from `sqlite` to `postgresql`
-- Run `npm run db:push` against the production database once
+1. Vercel → **silent-cpo-website** → **Storage** → **Create database** → **Neon Postgres**
+2. Connect to this project — Vercel injects `DATABASE_URL` and `DATABASE_URL_UNPOOLED` automatically
+3. Redeploy — the build runs `prisma db push` to create tables
+4. Locally: `vercel env pull .env.local` then `npm run dev`
 
-**Custom domain:** In Vercel project settings → Domains, add `silentcpo.me` and point DNS as instructed.
+The Platform admin tab will show **Neon Postgres** as configured once `DATABASE_URL` is set.
+
+**Custom domain (GoDaddy → Vercel):**
+
+1. Vercel → Project → **Settings → Domains** → add `silentcpo.me` and `www.silentcpo.me`
+2. GoDaddy → **DNS** for `silentcpo.me`:
+   - **A** `@` → `76.76.21.21` (Vercel)
+   - **CNAME** `www` → `cname.vercel-dns.com`
+3. GoDaddy → **Forwarding** — turn **off** any domain forward (a `/lander` redirect means forwarding is still on)
+4. Remove old GoDaddy A records pointing at GoDaddy parking IPs
+5. Wait up to 48h for DNS (usually much faster), then set `SITE_URL=https://silentcpo.me` in Vercel env vars
+
+**Live preview URL:** [silent-cpo-website.vercel.app](https://silent-cpo-website.vercel.app) works while DNS propagates.
 
 ## Brand Colours
 
