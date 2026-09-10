@@ -1,17 +1,29 @@
 /**
- * Neon/Vercel may inject POSTGRES_* vars without DATABASE_URL_UNPOOLED.
- * Prisma needs both — map fallbacks before generate/db push.
+ * Map Neon/Vercel env vars, then run a command with those vars applied.
+ * Usage: node scripts/ensure-db-env.mjs prisma generate
  */
-if (!process.env.DATABASE_URL?.trim()) {
-  const pooled =
-    process.env.POSTGRES_PRISMA_URL?.trim() ||
-    process.env.POSTGRES_URL?.trim();
-  if (pooled) process.env.DATABASE_URL = pooled;
+import { spawnSync } from "node:child_process";
+
+function ensureDbEnv() {
+  if (!process.env.DATABASE_URL?.trim()) {
+    const pooled =
+      process.env.POSTGRES_PRISMA_URL?.trim() ||
+      process.env.POSTGRES_URL?.trim();
+    if (pooled) process.env.DATABASE_URL = pooled;
+  }
 }
 
-if (!process.env.DATABASE_URL_UNPOOLED?.trim()) {
-  const direct =
-    process.env.POSTGRES_URL_NON_POOLING?.trim() ||
-    process.env.DATABASE_URL?.trim();
-  if (direct) process.env.DATABASE_URL_UNPOOLED = direct;
+const args = process.argv.slice(2);
+ensureDbEnv();
+
+if (args.length === 0) {
+  process.exit(0);
 }
+
+const result = spawnSync(args[0], args.slice(1), {
+  stdio: "inherit",
+  env: process.env,
+  shell: process.platform === "win32",
+});
+
+process.exit(result.status ?? 1);
