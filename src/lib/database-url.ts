@@ -14,25 +14,31 @@ const PREFIXED_SUFFIXES = [
   "DATABASE_URL",
 ] as const;
 
+function isPostgresUrl(value: string): boolean {
+  return /^postgres(ql)?:\/\//i.test(value.trim());
+}
+
 function findPrefixedUrl(suffix: string): string | undefined {
   const needle = `_${suffix}`;
   for (const [key, value] of Object.entries(process.env)) {
-    if (key.endsWith(needle) && value?.trim()) {
-      return value.trim();
+    const trimmed = value?.trim();
+    if (key.endsWith(needle) && trimmed && isPostgresUrl(trimmed)) {
+      return trimmed;
     }
   }
   return undefined;
 }
 
 export function resolveDatabaseUrl(): string {
-  for (const key of STANDARD_KEYS) {
-    const value = process.env[key]?.trim();
-    if (value) return value;
-  }
-
+  // Prefixed Neon vars first — never confused with local SQLite DATABASE_URL
   for (const suffix of PREFIXED_SUFFIXES) {
     const value = findPrefixedUrl(suffix);
     if (value) return value;
+  }
+
+  for (const key of STANDARD_KEYS) {
+    const value = process.env[key]?.trim();
+    if (value && isPostgresUrl(value)) return value;
   }
 
   return "";

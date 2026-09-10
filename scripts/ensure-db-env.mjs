@@ -9,6 +9,10 @@ import { spawnSync } from "node:child_process";
 const STANDARD_KEYS = ["POSTGRES_PRISMA_URL", "POSTGRES_URL", "DATABASE_URL"];
 const PREFIXED_SUFFIXES = ["POSTGRES_PRISMA_URL", "POSTGRES_URL", "DATABASE_URL"];
 
+function isPostgresUrl(value) {
+  return /^postgres(ql)?:\/\//i.test(value.trim());
+}
+
 function loadEnvFile(filename, override = false) {
   const path = resolve(process.cwd(), filename);
   if (!existsSync(path)) return;
@@ -38,19 +42,22 @@ function loadEnvFile(filename, override = false) {
 function findPrefixedUrl(suffix) {
   const needle = `_${suffix}`;
   for (const [key, value] of Object.entries(process.env)) {
-    if (key.endsWith(needle) && value?.trim()) return value.trim();
+    const trimmed = value?.trim();
+    if (key.endsWith(needle) && trimmed && isPostgresUrl(trimmed)) {
+      return trimmed;
+    }
   }
   return undefined;
 }
 
 function resolveDatabaseUrl() {
-  for (const key of STANDARD_KEYS) {
-    const value = process.env[key]?.trim();
-    if (value) return value;
-  }
   for (const suffix of PREFIXED_SUFFIXES) {
     const value = findPrefixedUrl(suffix);
     if (value) return value;
+  }
+  for (const key of STANDARD_KEYS) {
+    const value = process.env[key]?.trim();
+    if (value && isPostgresUrl(value)) return value;
   }
   return "";
 }
@@ -76,12 +83,12 @@ if (args.length === 0) {
 
 if (!ensureDbEnv()) {
   console.error(`
-No database URL found.
+No Postgres database URL found.
 
   vercel env pull .env.local
   npm run db:deploy
 
-(Neon vars look like silencpo_POSTGRES_PRISMA_URL in .env.local)
+Remove or comment out any SQLite DATABASE_URL="file:./dev.db" in .env
 `);
   process.exit(1);
 }
