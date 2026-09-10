@@ -34,7 +34,7 @@ Open [http://localhost:3000](http://localhost:3000) for the site, [http://localh
 
 | Variable | Description |
 |---|---|
-| `NEXT_PUBLIC_SITE_URL` | Production URL (e.g. `https://silentcpo.me`) |
+| `SITE_URL` | Site URL for SEO/metadata (optional on Vercel — auto-detected) |
 | `ADMIN_SECRET` | Secret key for admin dashboard access |
 | `STRIPE_SECRET_KEY` | Stripe secret key for payments/invoices |
 | `DATABASE_URL` | Database connection string |
