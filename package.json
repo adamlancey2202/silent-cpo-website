@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "node scripts/ensure-db-env.mjs && prisma generate",
     "dev": "next dev",
-    "build": "prisma generate && prisma db push --skip-generate && next build",
+    "build": "node scripts/ensure-db-env.mjs && prisma generate && prisma db push --skip-generate && next build",
     "start": "next start",
     "lint": "eslint .",
-    "db:push": "prisma db push",
+    "db:push": "node scripts/ensure-db-env.mjs && prisma db push",
     "db:studio": "prisma studio"
   },
   "dependencies": {
