@@ -1,20 +1,37 @@
 /**
- * Neon on Vercel injects POSTGRES_* vars — Prisma expects DATABASE_URL.
+ * Resolve Neon DB URL (including Vercel Storage prefixes like silencpo_*).
  * Usage: node scripts/ensure-db-env.mjs prisma generate
  */
 import { spawnSync } from "node:child_process";
 
-const URL_KEYS = ["POSTGRES_PRISMA_URL", "POSTGRES_URL", "DATABASE_URL"];
+const STANDARD_KEYS = ["POSTGRES_PRISMA_URL", "POSTGRES_URL", "DATABASE_URL"];
+const PREFIXED_SUFFIXES = ["POSTGRES_PRISMA_URL", "POSTGRES_URL", "DATABASE_URL"];
+
+function findPrefixedUrl(suffix) {
+  const needle = `_${suffix}`;
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.endsWith(needle) && value?.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+function resolveDatabaseUrl() {
+  for (const key of STANDARD_KEYS) {
+    const value = process.env[key]?.trim();
+    if (value) return value;
+  }
+  for (const suffix of PREFIXED_SUFFIXES) {
+    const value = findPrefixedUrl(suffix);
+    if (value) return value;
+  }
+  return "";
+}
 
 function ensureDbEnv() {
-  for (const key of URL_KEYS) {
-    const value = process.env[key]?.trim();
-    if (value) {
-      process.env.POSTGRES_PRISMA_URL = value;
-      process.env.DATABASE_URL = value;
-      return;
-    }
-  }
+  const resolved = resolveDatabaseUrl();
+  if (!resolved) return;
+  process.env.POSTGRES_PRISMA_URL = resolved;
+  process.env.DATABASE_URL = resolved;
 }
 
 const args = process.argv.slice(2);
