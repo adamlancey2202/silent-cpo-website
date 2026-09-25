@@ -3,7 +3,10 @@ function tryOrigin(value: string | undefined): string | null {
   if (!raw) return null;
   try {
     const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-    return new URL(withProtocol).origin;
+    const parsed = new URL(withProtocol);
+    if (!["http:", "https:"].includes(parsed.protocol)) return null;
+    if (["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname) || parsed.hostname.endsWith(".localhost") || parsed.hostname.endsWith(".local")) return null;
+    return parsed.origin;
   } catch {
     return null;
   }
@@ -13,8 +16,6 @@ function resolveSiteUrl(): string {
   // Server-only — not exposed to the browser (no NEXT_PUBLIC_ prefix)
   return (
     tryOrigin(process.env.SITE_URL) ??
-    tryOrigin(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
-    tryOrigin(process.env.VERCEL_URL) ??
     "https://silentcpo.me"
   );
 }
@@ -22,8 +23,9 @@ function resolveSiteUrl(): string {
 export const siteConfig = {
   name: "SilentCPO",
   tagline: "Complex ideas. Quietly mastered.",
+  seoTitle: "SilentCPO | Bespoke Websites, Apps & Product Development",
   description:
-    "SilentCPO is a digital product studio building websites, web apps, PWAs, native mobile apps, membership platforms, and bespoke digital tools. Your idea, made real.",
+    "UK digital product studio helping you define what your business needs, then design and build bespoke websites, apps, booking systems and member platforms.",
   url: resolveSiteUrl(),
   contact: {
     displayName: "SilentCPO",
@@ -33,7 +35,10 @@ export const siteConfig = {
     phoneDisplay: "07711 274 115",
   },
   services: [
+    "Product discovery and planning",
     "Websites",
+    "Custom Shopify themes",
+    "Booking systems",
     "Web Apps",
     "PWAs",
     "Native Apps",

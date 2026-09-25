@@ -5,13 +5,13 @@ import { motion } from "framer-motion";
 const principles = [
   {
     number: "01",
-    title: "Quiet expertise",
-    body: "No bloated agency theatrics. Just deep technical understanding applied with precision — the kind that makes complex systems feel effortless.",
+    title: "Understand the whole picture",
+    body: "Your goals, customers, day-to-day workflows, and constraints all matter. I look at the whole business problem before recommending what to build.",
   },
   {
     number: "02",
-    title: "Your vision, elevated",
-    body: "You bring the idea. I bring the architecture, the craft, and the obsession with detail that turns concepts into products people actually use.",
+    title: "Challenge the brief",
+    body: "A brief is a starting point. Together we question assumptions, separate essentials from extras, and work out what you actually need to move forward.",
   },
   {
     number: "03",
@@ -38,9 +38,9 @@ export function Philosophy() {
             THE SILENT APPROACH
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-mist/70">
-            The best digital products don&apos;t shout. They work beautifully,
-            load fast, and solve real problems. That&apos;s the standard every
-            SilentCPO build is held to.
+            I take a holistic approach to digital product development. Before
+            writing code, I help you understand the problem, question what is
+            needed, and shape a practical solution around your business.
           </p>
         </motion.div>
 

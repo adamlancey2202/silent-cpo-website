@@ -31,6 +31,8 @@ export function Contact() {
               idea and what you&apos;re trying to achieve.
             </p>
 
+            <p className="mt-4 text-sm text-green">I’ll respond within 24 hours.</p>
+
             <div className="mt-10 space-y-4">
               <a
                 href={`mailto:${siteConfig.contact.email}`}

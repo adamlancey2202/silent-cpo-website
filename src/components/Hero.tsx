@@ -59,9 +59,10 @@ export function Hero() {
             transition={{ delay: 1.2 }}
             className="max-w-lg text-base leading-relaxed text-mist/70"
           >
-            I build the digital products others say are too complex — websites,
-            web apps, PWAs, native mobile, membership platforms, and bespoke
-            tools. One specialist. Zero noise. Total mastery.
+            A UK digital product studio for bespoke websites, apps, and platforms.
+            I help you work out what your business really needs, then design and
+            build it. From the first question to launch, you work directly with
+            one specialist.
           </motion.p>
 
           <motion.div
@@ -77,10 +78,10 @@ export function Hero() {
               <span className="relative z-10">START A CONVERSATION</span>
             </a>
             <a
-              href="#capabilities"
+              href="#work"
               className="border border-mist/20 px-8 py-4 text-sm tracking-[0.15em] text-mist/80 transition hover:border-gold/40 hover:text-gold"
             >
-              SEE WHAT I BUILD
+              EXPLORE MY WORK
             </a>
           </motion.div>
 

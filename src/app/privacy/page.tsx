@@ -3,12 +3,25 @@ import Link from "next/link";
 import { GridBackground } from "@/components/GridBackground";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { isPreviewDeployment } from "@/lib/indexing";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: `Privacy policy for ${siteConfig.name} — how we collect, use, and protect your personal data.`,
-  robots: { index: true, follow: true },
+  alternates: { canonical: `${siteConfig.url}/privacy` },
+  openGraph: {
+    title: `Privacy Policy | ${siteConfig.name}`,
+    description: `How ${siteConfig.name} collects, uses, and protects enquiry data.`,
+    url: `${siteConfig.url}/privacy`,
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: `Privacy Policy | ${siteConfig.name}`,
+    description: `How ${siteConfig.name} collects, uses, and protects enquiry data.`,
+  },
+  robots: { index: !isPreviewDeployment, follow: true },
 };
 
 const sections = [

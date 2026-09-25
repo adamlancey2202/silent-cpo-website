@@ -4,6 +4,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const POOLED_SUFFIXES = ["POSTGRES_PRISMA_URL", "POSTGRES_URL", "DATABASE_URL"];
@@ -11,11 +12,11 @@ const POOLED_KEYS = ["POSTGRES_PRISMA_URL", "POSTGRES_URL", "DATABASE_URL"];
 const DIRECT_SUFFIXES = ["POSTGRES_URL_NON_POOLING", "DATABASE_URL_UNPOOLED"];
 const DIRECT_KEYS = ["POSTGRES_URL_NON_POOLING", "DATABASE_URL_UNPOOLED"];
 
-function isPostgresUrl(value) {
+export function isPostgresUrl(value) {
   return /^postgres(ql)?:\/\//i.test(value.trim());
 }
 
-function loadEnvFile(filename, override = false) {
+export function loadEnvFile(filename, override = false) {
   const path = resolve(process.cwd(), filename);
   if (!existsSync(path)) return;
 
@@ -54,7 +55,7 @@ function findPrefixedUrl(suffixes) {
   return undefined;
 }
 
-function resolvePooledUrl() {
+export function resolvePooledUrl() {
   const prefixed = findPrefixedUrl(POOLED_SUFFIXES);
   if (prefixed) return prefixed;
 
@@ -65,7 +66,7 @@ function resolvePooledUrl() {
   return "";
 }
 
-function resolveDirectUrl() {
+export function resolveDirectUrl() {
   const prefixed = findPrefixedUrl(DIRECT_SUFFIXES);
   if (prefixed) return prefixed;
 
@@ -95,27 +96,40 @@ function ensureDbEnv(args) {
   return true;
 }
 
-const args = process.argv.slice(2);
+const isDirectRun =
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
-if (args.length === 0) {
-  ensureDbEnv(args);
-  process.exit(0);
-}
+if (isDirectRun) {
+  const args = process.argv.slice(2);
 
-if (!ensureDbEnv(args)) {
-  console.error(`
+  if (args.length === 0) {
+    ensureDbEnv(args);
+    process.exit(0);
+  }
+
+  if (!ensureDbEnv(args)) {
+    const isGenerate = args.includes("generate");
+    if (!isGenerate) {
+      console.error(`
 No Postgres database URL found.
 
-Tables are created automatically on Vercel deploy.
 For local setup: vercel link && vercel env pull .env.local && npm run db:deploy
 `);
-  process.exit(1);
+      process.exit(1);
+    }
+
+    // prisma generate only needs a valid URL shape — not a live database
+    process.env.POSTGRES_PRISMA_URL =
+      "postgresql://postgres:postgres@127.0.0.1:5432/postgres";
+    process.env.DATABASE_URL = process.env.POSTGRES_PRISMA_URL;
+  }
+
+  const result = spawnSync(args[0], args.slice(1), {
+    stdio: "inherit",
+    env: process.env,
+    shell: process.platform === "win32",
+  });
+
+  process.exit(result.status ?? 1);
 }
-
-const result = spawnSync(args[0], args.slice(1), {
-  stdio: "inherit",
-  env: process.env,
-  shell: process.platform === "win32",
-});
-
-process.exit(result.status ?? 1);

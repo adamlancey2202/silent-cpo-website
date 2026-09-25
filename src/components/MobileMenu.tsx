@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { siteConfig } from "@/lib/site";
 
 const navItems = [
-  { label: "Philosophy", href: "#philosophy", num: "01" },
-  { label: "Capabilities", href: "#capabilities", num: "02" },
-  { label: "Process", href: "#process", num: "03" },
-  { label: "Contact", href: "#contact", num: "04" },
+  { label: "Work", href: "/#work", num: "01" },
+  { label: "Philosophy", href: "/#philosophy", num: "02" },
+  { label: "Capabilities", href: "/#capabilities", num: "03" },
+  { label: "Process", href: "/#process", num: "04" },
+  { label: "Contact", href: "/#contact", num: "05" },
 ];
 
 interface MobileMenuProps {
@@ -34,7 +35,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[60] bg-deep/95 backdrop-blur-xl md:hidden"
+            className="fixed inset-0 z-[60] bg-deep/95 backdrop-blur-xl lg:hidden"
             onClick={onClose}
           />
 
@@ -43,7 +44,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-sm flex-col border-l border-mist/10 bg-midnight/95 md:hidden"
+            className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-sm flex-col border-l border-mist/10 bg-midnight/95 lg:hidden"
             aria-label="Mobile navigation"
           >
             <div className="absolute inset-0 grid-bg opacity-20" />
@@ -64,7 +65,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
               </button>
             </div>
 
-            <div className="relative flex-1 px-6 py-8">
+            <div className="relative flex-1 overflow-y-auto px-6 py-8">
               <ul className="space-y-1">
                 {navItems.map((item, i) => (
                   <motion.li
@@ -130,7 +131,7 @@ export function MenuButton({
       onClick={onClick}
       aria-label={open ? "Close menu" : "Open menu"}
       aria-expanded={open}
-      className="relative flex h-10 w-10 items-center justify-center border border-mist/10 transition hover:border-gold/40 md:hidden"
+      className="relative flex h-10 w-10 items-center justify-center border border-mist/10 transition hover:border-gold/40 lg:hidden"
     >
       <span className="flex w-4 flex-col items-end gap-1.5">
         <motion.span

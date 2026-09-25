@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, DM_Sans, JetBrains_Mono } from "next/font/google";
-import { getOrganizationJsonLd, getWebSiteJsonLd } from "@/lib/seo";
+import { isPreviewDeployment } from "@/lib/indexing";
 import { siteConfig } from "@/lib/site";
 import "./globals.css";
 
@@ -33,7 +33,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} — ${siteConfig.tagline}`,
+    default: siteConfig.seoTitle,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -50,36 +50,39 @@ export const metadata: Metadata = {
     locale: "en_GB",
     url: siteConfig.url,
     siteName: siteConfig.name,
-    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    title: siteConfig.seoTitle,
     description: siteConfig.description,
     images: [
       {
         url: "/images/brand-card.png",
-        width: 1200,
-        height: 630,
+        width: 1024,
+        height: 576,
         alt: "SilentCPO — Digital Product Studio",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    title: siteConfig.seoTitle,
     description: siteConfig.description,
     images: ["/images/brand-card.png"],
   },
   robots: {
-    index: true,
+    index: !isPreviewDeployment,
     follow: true,
     googleBot: {
-      index: true,
+      index: !isPreviewDeployment,
       follow: true,
       "max-video-preview": -1,
       "max-image-preview": "large",
       "max-snippet": -1,
     },
   },
-  alternates: {
-    canonical: siteConfig.url,
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    other: process.env.BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION }
+      : undefined,
   },
   category: "technology",
 };
@@ -89,7 +92,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const jsonLd = [getOrganizationJsonLd(), getWebSiteJsonLd()];
 
   return (
     <html
@@ -99,10 +101,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/images/logo.jpg" type="image/jpeg" />
         <link rel="apple-touch-icon" href="/images/logo.jpg" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="About SilentCPO" />
       </head>
       <body>{children}</body>
     </html>

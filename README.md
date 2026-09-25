@@ -34,7 +34,7 @@ Open [http://localhost:3000](http://localhost:3000) for the site, [http://localh
 
 | Variable | Description |
 |---|---|
-| `SITE_URL` | Site URL for SEO/metadata (optional on Vercel — auto-detected) |
+| `SITE_URL` | Public canonical domain for SEO/metadata (defaults to https://silentcpo.me) |
 | `ADMIN_SECRET` | Secret key for admin dashboard access |
 | `STRIPE_SECRET_KEY` | Stripe secret key for payments/invoices |
 | `DATABASE_URL` | Database connection string |
@@ -134,3 +134,14 @@ The Platform admin tab will show **Neon Postgres** as configured once Neon is co
 | Antique Gold | `#B89A62` | Accent (≤3%) |
 | Mineral Green | `#6F9C8C` | Product accent |
 | Mist Blue | `#DCE7ED` | Quiet surfaces |
+
+## Search and AI discovery
+
+- Set `SITE_URL=https://silentcpo.me` in production. Localhost is ignored for canonical metadata; preview deployment hostnames are not inferred.
+- The homepage has linked Organization, WebSite, WebPage, service catalogue, selected-work and FAQ structured data. FAQ answers also appear as native HTML details on the page; this does not promise FAQ rich results.
+- `src/lib/projects.ts` and `src/lib/faqs.ts` supply both visible content and the generated `/llms.txt`, `/llms-full.txt`, and legacy `/ai.txt` discovery routes. Keep private project URLs omitted from this shared data.
+- `llms.txt` is supplementary machine-readable context, not a requirement or guarantee for AI search inclusion. The legacy `ai.txt` URL is an alias, not a standard permission file.
+- Public pages are crawlable. Admin and API paths are excluded in robots and receive noindex headers; admin authentication remains necessary. Vercel preview deployments receive site-wide noindex headers and crawl exclusions.
+- The sitemap contains only the homepage and privacy page. Do not add invented last-modified dates; maintain actual content dates if adding them later.
+- After deploying, verify domain ownership in Google Search Console and Bing Webmaster Tools, then submit `https://silentcpo.me/sitemap.xml`. Optional HTML verification tokens can be configured with `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION`; never put account credentials in those fields.
+- Check the live canonical URLs, crawler access through the host/CDN, social image, and mobile performance after deployment. Local checks do not verify production indexing.

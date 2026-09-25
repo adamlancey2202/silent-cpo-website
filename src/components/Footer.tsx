@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { siteConfig } from "@/lib/site";
 
 export function Footer() {
@@ -20,6 +21,7 @@ export function Footer() {
         </p>
 
         <div className="flex flex-wrap justify-center gap-6 text-xs text-mist/40">
+          <Link href="/#faq" className="transition hover:text-gold">FAQs</Link>
           <a href="/privacy" className="transition hover:text-gold">
             Privacy
           </a>

@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { siteConfig } from "@/lib/site";
 import { MobileMenu, MenuButton } from "./MobileMenu";
 
 const navItems = [
-  { label: "Philosophy", href: "#philosophy" },
-  { label: "Capabilities", href: "#capabilities" },
-  { label: "Process", href: "#process" },
-  { label: "Contact", href: "#contact" },
+  { label: "Work", href: "/#work" },
+  { label: "Philosophy", href: "/#philosophy" },
+  { label: "Capabilities", href: "/#capabilities" },
+  { label: "Process", href: "/#process" },
+  { label: "Contact", href: "/#contact" },
 ];
 
 export function Header() {
@@ -25,7 +27,7 @@ export function Header() {
         className="fixed top-0 z-50 w-full border-b border-mist/5 bg-deep/80 backdrop-blur-lg"
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <a href="#" className="group flex items-center gap-3">
+          <Link href="/" className="group flex items-center gap-3">
             <Image
               src="/images/logo.jpg"
               alt="SilentCPO logo"
@@ -42,9 +44,9 @@ export function Header() {
                 DIGITAL PRODUCT STUDIO
               </span>
             </div>
-          </a>
+          </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
+          <nav className="hidden items-center gap-5 lg:gap-8 lg:flex">
             {navItems.map((item) => (
               <a
                 key={item.href}
