@@ -13,7 +13,7 @@ export const faqs = [
   },
   {
     question: "What kinds of projects have you built?",
-    answer: "Selected work includes The Goddery’s custom Shopify supplement-store theme, Bookivo’s booking system, Aevum Healthcare’s catalogue and member platform, Kratos Dominion’s private membership platform, and the Witness Wise professional services website.",
+    answer: "Selected work includes The Goddery’s custom Shopify supplement-store theme, Bookivo’s booking system, Aevum Healthcare’s catalogue and member platform, Kratos Dominion’s private membership platform, the Witness Wise professional services website, and Vialo’s personal tracking web app.",
   },
   {
     question: "How are project costs and timelines agreed?",

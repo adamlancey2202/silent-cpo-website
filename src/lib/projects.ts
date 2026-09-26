@@ -46,4 +46,13 @@ export const projects = [
     url: "https://witnesswise.co.uk/",
     tags: ["Legal services", "Service website", "Enquiries"],
   },
+  {
+    name: "Vialo",
+    category: "PERSONAL TRACKING WEB APP",
+    description:
+      "A personal peptide tracking app that brings protocols, supply calculations, and colour-coded inventory into one place. Low-stock alerts, supplier reorder shortcuts, and an on-demand AI information agent support a clear experience across phone and desktop.",
+    image: "vialo",
+    alt: "Vialo’s dark interface with mint branding and a colour-coded peptide setup form",
+    tags: ["Web app", "Inventory tracking", "AI integration"],
+  },
 ];
