@@ -51,8 +51,8 @@ export const projects = [
     category: "PERSONAL TRACKING WEB APP",
     description:
       "A personal peptide tracking app that brings protocols, supply calculations, and colour-coded inventory into one place. Low-stock alerts, supplier reorder shortcuts, and an on-demand AI information agent support a clear experience across phone and desktop.",
-    image: "vialo",
-    alt: "Vialo’s dark interface with mint branding and a colour-coded peptide setup form",
+    image: "vialo-dashboard",
+    alt: "Vialo dashboard with mint branding, weekly stack totals, inventory counts, and a low-stock alert",
     tags: ["Web app", "Inventory tracking", "AI integration"],
   },
 ];
