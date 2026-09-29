@@ -1,6 +1,13 @@
 export const projects = [
   {
     name: "The Goddery",
+    story: {
+      "title": "A bold identity. A familiar way to shop.",
+      "challenge": "The brief called for a cinematic, Viking-inspired supplement store, with clear product information and straightforward shopping on smaller screens.",
+      "approach": "The design brings the brand into the navigation, merchandising, and product pages, while Shopify handles the underlying commerce. Editable sections put routine content changes in the merchant’s hands.",
+      "built": "A custom Shopify theme with responsive product browsing, structured supplement information, a cart drawer, and app-style mobile navigation.",
+      "enables": "A distinctive storefront built around familiar shopping steps, with content the retailer can manage through Shopify."
+},
     category: "CUSTOM SHOPIFY THEME",
     description:
       "A custom-built Shopify theme for an independent supplement store. A bold visual identity, goal-led browsing, and a storefront shaped around sports nutrition.",
@@ -10,6 +17,13 @@ export const projects = [
   },
   {
     name: "Bookivo",
+    story: {
+      "title": "From first impression to the next appointment.",
+      "challenge": "A service business needs its website, availability, payments, and customer information to work together. A booking journey has to account for the team’s real working day.",
+      "approach": "Bookivo connects the customer-facing brand with the operational details behind each appointment: staff rotas, service durations, intake questions, and payment rules.",
+      "built": "Branded booking websites backed by team calendars, deposits and payments, consultation forms, automated reminders, and customer rescheduling.",
+      "enables": "Customers can discover a business and book under its own brand, while the team manages appointments and availability in the same platform."
+},
     category: "BOOKING SYSTEM",
     description:
       "A booking platform for beauty, salons, and service businesses. Branded booking websites bring appointments, deposits, calendars, and client management together.",
@@ -48,6 +62,13 @@ export const projects = [
   },
   {
     name: "Vialo",
+    story: {
+      "title": "A little clarity, beyond the notepad.",
+      "challenge": "Schedules, stock counts, supply calculations, and supplier details are easy to scatter across notes. The product brief brought these connected tasks into one daily view.",
+      "approach": "The experience links what is scheduled with what is in stock. Colour-coded records and a focused dashboard make the tracking information easier to scan across phone and desktop.",
+      "built": "A responsive personal tracking app with a weekly schedule, daily completion ticks, inventory counts, supply estimates, reorder alerts, and an on-demand AI reference agent.",
+      "enables": "One place to record a personal routine and keep track of supplies. The product supports organisation and reference, without presenting itself as medical advice."
+},
     category: "PERSONAL TRACKING WEB APP",
     description:
       "A personal peptide tracking app that brings protocols, supply calculations, and colour-coded inventory into one place. Low-stock alerts, supplier reorder shortcuts, and an on-demand AI information agent support a clear experience across phone and desktop.",

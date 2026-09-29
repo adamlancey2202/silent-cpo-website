@@ -5,6 +5,7 @@ import { FAQ } from "@/components/FAQ";
 import { GridBackground } from "@/components/GridBackground";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
+import { Testimonials } from "@/components/Testimonials";
 import { SelectedWork } from "@/components/SelectedWork";
 import { Philosophy } from "@/components/Philosophy";
 import { Capabilities } from "@/components/Capabilities";
@@ -23,6 +24,7 @@ export default function HomePage() {
       <main>
         <Hero />
         <SelectedWork />
+        <Testimonials />
         <Philosophy />
         <Capabilities />
         <Process />

@@ -33,7 +33,7 @@ export function SelectedWork() {
                 target={project.url ? "_blank" : undefined}
                 rel={project.url ? "noopener noreferrer" : undefined}
                 aria-label={project.url ? `View ${project.name} website (opens in a new tab)` : undefined}
-                className="block h-full focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-gold"
+                className="block focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-gold"
               >
                 <div className="flex items-center justify-between border-b border-mist/10 px-5 py-3">
                   <span className="font-[family-name:var(--font-mono)] text-xs tracking-wider text-mist/65">
@@ -70,6 +70,27 @@ export function SelectedWork() {
                   </span>}
                 </div>
               </Card>
+              {project.story && (
+                <details className="mx-6 mb-6 border-t border-mist/15 pt-5 md:mx-8 md:mb-8">
+                  <summary className="cursor-pointer rounded text-sm text-gold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold">
+                    Read the project story<span className="sr-only">: {project.name}</span>
+                  </summary>
+                  <h4 className="mt-5 text-lg font-medium text-bone">{project.story.title}</h4>
+                  <dl className="mt-5 space-y-5 text-sm leading-relaxed">
+                    {[
+                      ["The challenge", project.story.challenge],
+                      ["The approach", project.story.approach],
+                      ["The build", project.story.built],
+                      ["What it enables", project.story.enables],
+                    ].map(([label, text]) => (
+                      <div key={label}>
+                        <dt className="mb-1 font-medium text-bone">{label}</dt>
+                        <dd className="text-mist/75">{text}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </details>
+              )}
             </article>
             );
           })}
