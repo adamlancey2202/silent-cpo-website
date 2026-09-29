@@ -47,3 +47,29 @@ model Invoice {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+// Validated by src/lib/content/schema.ts. Public queries only read published articles.
+model ContentEntry {
+  id          String   @id @default(cuid())
+  kind        String
+  title       String
+  status      String
+  data        Json
+  slug        String?  @unique
+  publishedAt DateTime?
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([kind, status, updatedAt])
+}
+
+model ContentRun {
+  id          String   @id @default(cuid())
+  requestKey  String   @unique
+  requestHash String
+  articleId   String
+  topicId     String?
+  message     String
+  createdAt   DateTime @default(now())
+}

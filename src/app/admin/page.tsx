@@ -11,11 +11,12 @@ import {
   RefreshCw,
   Layers,
 } from "lucide-react";
+import { ContentPanel } from "@/components/admin/ContentPanel";
 import { PlatformPanel } from "@/components/admin/PlatformPanel";
 import { RevenueCards } from "@/components/admin/RevenueCards";
 import { formatMoney } from "@/lib/revenue";
 
-type Tab = "overview" | "contacts" | "payments" | "platform";
+type Tab = "overview" | "contacts" | "payments" | "platform" | "content";
 
 interface Contact {
   id: string;
@@ -127,6 +128,7 @@ export default function AdminPage() {
     try {
       const res = await apiFetch("/api/admin/dashboard");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load dashboard");
       setContacts(data.contacts);
       setPaymentLinks(data.paymentLinks);
       setInvoices(data.invoices);
@@ -235,6 +237,7 @@ export default function AdminPage() {
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
     { id: "contacts", label: "Enquiries", icon: Mail },
     { id: "payments", label: "Stripe", icon: CreditCard },
+    { id: "content", label: "Content", icon: FileText },
     { id: "platform", label: "Platform", icon: Layers },
   ];
 
@@ -417,6 +420,8 @@ export default function AdminPage() {
             )}
           </div>
         )}
+
+        {tab === "content" && <ContentPanel apiFetch={apiFetch} />}
 
         {tab === "platform" && <PlatformPanel apiFetch={apiFetch} />}
 

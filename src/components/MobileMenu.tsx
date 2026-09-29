@@ -10,7 +10,8 @@ const navItems = [
   { label: "Philosophy", href: "/#philosophy", num: "02" },
   { label: "Capabilities", href: "/#capabilities", num: "03" },
   { label: "Process", href: "/#process", num: "04" },
-  { label: "Contact", href: "/#contact", num: "05" },
+  { label: "Insights", href: "/blog", num: "05" },
+  { label: "Contact", href: "/#contact", num: "06" },
 ];
 
 interface MobileMenuProps {

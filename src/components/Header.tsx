@@ -12,6 +12,7 @@ const navItems = [
   { label: "Philosophy", href: "/#philosophy" },
   { label: "Capabilities", href: "/#capabilities" },
   { label: "Process", href: "/#process" },
+  { label: "Insights", href: "/blog" },
   { label: "Contact", href: "/#contact" },
 ];
 
