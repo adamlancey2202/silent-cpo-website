@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+<title id="title">SilentCPO Content Studio</title><desc id="desc">Workflow illustration showing approved sources moving through n8n and OpenAI to a draft, human review and publication. Google Analytics and Search Console provide reporting.</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0b2024"/><stop offset="1" stop-color="#10141c"/></linearGradient></defs>
+<rect width="1280" height="720" fill="url(#bg)"/>
+<g fill="none" stroke="#183438" opacity=".6"><path d="M0 120H1280M0 240H1280M0 360H1280M0 480H1280M0 600H1280M160 0V720M320 0V720M480 0V720M640 0V720M800 0V720M960 0V720M1120 0V720"/></g>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="76" y="93" fill="#c5aa72" font-size="20" letter-spacing="4">SILENTCPO / IN-HOUSE BUILD</text>
+<text x="76" y="173" fill="#f1ede3" font-size="59" font-weight="700">Knowledge into content.</text>
+<text x="76" y="219" fill="#aabbbb" font-size="25">AI-assisted drafting. Human editorial control.</text>
+<path d="M356 365H433M775 365H852" stroke="#c5aa72" stroke-width="3"/><path d="m422 357 11 8-11 8m419-16 11 8-11 8" stroke="#c5aa72" stroke-width="3" fill="none"/>
+<rect x="76" y="294" width="280" height="160" rx="18" fill="#112b2e" stroke="#34504d"/>
+<rect x="433" y="294" width="342" height="160" rx="18" fill="#173732" stroke="#70bca3"/>
+<rect x="852" y="294" width="352" height="160" rx="18" fill="#112b2e" stroke="#34504d"/>
+<g fill="#c5aa72" font-size="16" letter-spacing="2"><text x="102" y="332">01 / CONTEXT</text><text x="460" y="332">02 / GENERATION</text><text x="880" y="332">03 / EDITORIAL</text></g>
+<g fill="#f1ede3" font-size="29" font-weight="700"><text x="102" y="381">Source library</text><text x="460" y="381">n8n + OpenAI</text><text x="880" y="381">Review &amp; publish</text></g>
+<g fill="#aabbbb" font-size="20"><text x="102" y="418">Approved facts + topics</text><text x="460" y="418">Create and deliver a draft</text><text x="880" y="418">Keep the final say</text></g>
+<rect x="76" y="503" width="1128" height="112" rx="18" fill="#101e26" stroke="#344247"/>
+<text x="103" y="545" fill="#c5aa72" font-size="16" letter-spacing="2">REPORTING</text>
+<text x="103" y="580" fill="#f1ede3" font-size="24">Google Analytics 4 + Search Console</text>
+<text x="735" y="580" fill="#aabbbb" font-size="21">Traffic, page views &amp; search visibility</text>
+<text x="76" y="666" fill="#859b9c" font-size="16" letter-spacing="2">WORKFLOW ILLUSTRATION</text>
+</g></svg>

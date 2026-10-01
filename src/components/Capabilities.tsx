@@ -48,10 +48,10 @@ const capabilities = [
   },
   {
     icon: Sparkles,
-    title: "Bespoke Everything",
+    title: "AI & Workflow Automation",
     description:
-      "If you can describe it, it can be built. Custom integrations, AI-powered features, admin panels, and internal tools.",
-    tags: ["Custom", "AI-ready", "APIs"],
+      "Connect your business tools with n8n workflows and AI models. From content drafting to custom admin processes, build in the checks and human review your work needs.",
+    tags: ["n8n", "AI models", "Integrations"],
   },
 ];
 

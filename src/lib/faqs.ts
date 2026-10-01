@@ -1,7 +1,7 @@
 export const faqs = [
   {
     question: "What does SilentCPO do?",
-    answer: "SilentCPO is a UK digital product studio helping founders and businesses define, design, and build bespoke digital products. Projects include websites, custom Shopify themes, web and mobile apps, booking systems, membership platforms, and internal tools.",
+    answer: "SilentCPO is a UK digital product studio helping founders and businesses define, design, and build bespoke digital products. Projects include websites, custom Shopify themes, web and mobile apps, booking systems, membership platforms, internal tools, and AI-assisted workflow automation.",
   },
   {
     question: "Can you help if I do not have a finished brief?",
@@ -13,7 +13,11 @@ export const faqs = [
   },
   {
     question: "What kinds of projects have you built?",
-    answer: "Selected work includes The Goddery’s custom Shopify supplement-store theme, Bookivo’s booking system, Aevum Healthcare’s catalogue and member platform, Kratos Dominion’s private membership platform, the Witness Wise professional services website, and Vialo’s personal tracking web app.",
+    answer: "Selected work includes The Goddery’s custom Shopify supplement-store theme, Bookivo’s booking system, Aevum Healthcare’s catalogue and member platform, Kratos Dominion’s private membership platform, the Witness Wise professional services website, Vialo’s personal tracking web app, and SilentCPO’s own AI content and automation studio.",
+  },
+  {
+    question: "Can you build AI and n8n automations for my business?",
+    answer: "Yes. I build workflows that connect business tools and AI models around a defined process, with validation and human review where needed. SilentCPO’s own Content Studio uses n8n and OpenAI for topic planning and article drafts, with an editorial admin and analytics reporting integrations. We start by understanding the work you want to improve and deciding which steps should be automated.",
   },
   {
     question: "How are project costs and timelines agreed?",

@@ -18,7 +18,7 @@ export function SelectedWork() {
             </h2>
           </div>
           <p className="max-w-md text-base leading-relaxed text-mist/75">
-            Custom storefronts, booking systems, and member platforms.
+            Custom storefronts, booking systems, member platforms, and AI automation.
             A closer look at what I build.
           </p>
         </div>
@@ -43,7 +43,7 @@ export function SelectedWork() {
                 </div>
                 <div className="aspect-video overflow-hidden border-b border-mist/10 bg-deep">
                   <Image
-                    src={`/images/work/${project.image}.webp`}
+                    src={project.imageSrc ?? `/images/work/${project.image}.webp`}
                     alt={project.alt}
                     width={1280}
                     height={720}

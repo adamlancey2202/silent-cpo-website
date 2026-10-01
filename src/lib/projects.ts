@@ -76,4 +76,21 @@ export const projects = [
     alt: "Vialo dashboard with mint branding, weekly stack totals, inventory counts, and a low-stock alert",
     tags: ["Web app", "Inventory tracking", "AI integration"],
   },
+  {
+    name: "SilentCPO Content Studio",
+    category: "IN-HOUSE AI CONTENT & AUTOMATION",
+    description:
+      "A bespoke blogging system connecting n8n and OpenAI with a source library, topic planner and editorial dashboard. AI-generated drafts move into human review, with Google Analytics and Search Console reporting alongside the content tools.",
+    image: "content-studio",
+    imageSrc: "/images/work/content-studio.svg",
+    alt: "Content Studio workflow illustration: approved sources, n8n and OpenAI drafting, human review, publishing and analytics reporting",
+    tags: ["n8n", "OpenAI", "Analytics", "Editorial workflow"],
+    story: {
+      title: "From business knowledge to a draft worth reviewing.",
+      challenge: "Creating useful blog content involves more than writing: business context, source material, topic planning, publishing and performance reporting all need a place in the process.",
+      approach: "Built for SilentCPO itself, the system gives automation an approved business profile and source library to work from. n8n coordinates topic planning and OpenAI drafting, while the admin keeps editorial decisions with a person.",
+      built: "A content database and admin workspace, n8n topic-planning and draft-generation workflows, authenticated draft delivery, an article editor and public blog, plus reporting integrations for Google Analytics 4 and Google Search Console.",
+      enables: "A connected route from approved knowledge to article drafts, review and publication, with traffic and search reporting available when the analytics accounts are connected. The workflows create drafts; publication remains a deliberate editorial action.",
+    },
+  },
 ];

@@ -4,6 +4,7 @@ import { ArticleBody } from "@/components/ArticleBody";
 import { ContentKind, Entry, kinds, statuses } from "@/lib/content/schema";
 import { defaultData, fields, labels } from "@/lib/content/fields";
 import { AnalyticsSnapshotPanel } from "@/components/admin/AnalyticsSnapshotPanel";
+import { BacklinkPlaybook } from "@/components/admin/BacklinkPlaybook";
 import { ContentStudioGuide } from "@/components/admin/ContentStudioGuide";
 
 type Run = { id: string; requestKey: string; articleId: string; message: string; createdAt: string };
@@ -161,7 +162,7 @@ export function ContentPanel({ apiFetch }: { apiFetch: Fetch }) {
         {section !== "profile" && <><input className={`${input} max-w-xs`} aria-label="Search content" placeholder="Search titles…" value={search} onChange={(e) => setSearch(e.target.value)} /><select aria-label="Filter by status" className={`${input} max-w-48`} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="">All statuses</option>{statuses[section].map((s) => <option key={s}>{s}</option>)}</select></>}
       </div>
       {section === "profile" && <p className="text-sm text-mist/70">The starter profile reflects your studio’s current positioning. Review it, then mark it Approved to share it with n8n.</p>}
-      {section === "backlink" && <p className="text-sm text-mist/70">Keep a shortlist of relevant publications, collaborators and resources. This is an opportunity tracker; it does not place links or send outreach.</p>}
+      {section === "backlink" && <BacklinkPlaybook />}
       {editor && <form onSubmit={save} className="space-y-5 rounded-xl border border-gold/30 bg-midnight/30 p-5 md:p-8">
         <div className="flex items-center justify-between gap-4"><h3 className="text-xl">{editor.id ? "Edit" : "New"} {labels[editor.kind].toLowerCase()}</h3><button type="button" disabled={saving} className={button} onClick={() => { if (window.confirm("Close without saving?")) setEditor(null); }}>Close editor</button></div>
         <label className="block space-y-2 text-sm"><span>Title</span><input required maxLength={200} className={input} value={editor.title} onChange={(e) => setEditor({ ...editor, title: e.target.value })} /></label>

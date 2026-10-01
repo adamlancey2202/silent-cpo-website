@@ -45,6 +45,7 @@ export const siteConfig = {
     "Membership Platforms",
     "Calculators & Tools",
     "Bespoke Software",
+    "AI and n8n workflow automation",
   ],
   keywords: [
     "digital product studio",
@@ -56,5 +57,7 @@ export const siteConfig = {
     "bespoke software development",
     "Next.js developer",
     "React Native developer",
+    "n8n automation developer",
+    "AI workflow automation",
   ],
 } as const;
