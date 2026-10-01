@@ -61,7 +61,7 @@ export const topicProposal = z.object({
 });
 export const topicPlanInput = z.object({
   requestKey: z.string().trim().min(8).max(150),
-  topics: z.array(topicProposal).min(1).max(15),
+  topics: z.array(topicProposal).min(1).max(40),
 }).strict();
 
 export type Entry = { id: string; kind: ContentKind; title: string; status: string; slug: string | null; data: Record<string, string | number | string[]>; version: number; createdAt: string; updatedAt: string; publishedAt: string | null };

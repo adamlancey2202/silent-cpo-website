@@ -44,7 +44,7 @@ Returns `{profile, sources, topics, existingTopics, existingArticles}`.
 
 ### POST /api/automation/content/topics
 
-Creates up to 15 topic entries from n8n (competitor-driven planning). Requires the same bearer token. Idempotent via `requestKey`.
+Creates up to 40 topic entries from n8n (competitor-driven planning). Requires the same bearer token. Idempotent via `requestKey`.
 
 ```json
 {

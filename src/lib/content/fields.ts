@@ -8,7 +8,7 @@ export const fields: Record<ContentKind, Field[]> = {
     { key: "positioning", label: "Your approach", type: "textarea" },
     { key: "instructions", label: "Writing rules", type: "textarea" },
     { key: "exclusions", label: "Things to avoid or keep private", type: "textarea" },
-    { key: "competitors", label: "Competitor websites and notes", type: "textarea" },
+    { key: "competitors", label: "Competitor websites and notes", type: "textarea", help: "Used by the n8n topic planner when this profile is Approved. Include https:// URLs or domains (e.g. agency.co.uk). One competitor per line with optional notes." },
     { key: "cta", label: "Call to action" }, { key: "ctaUrl", label: "Call-to-action URL", type: "url" },
   ],
   source: [

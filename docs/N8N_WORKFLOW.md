@@ -212,7 +212,7 @@ It will:
 
 1. GET profile, existing topics, and articles  
 2. Fetch competitor URLs from the profile (public pages only)  
-3. Ask OpenAI for up to **8** new topics that fill gaps vs competitors  
+3. Ask OpenAI for **30** topics (configurable in the workflow **Config** node) using the full competitor list plus fetched pages  
 4. POST them as **Ready** in Content Studio (skips duplicate titles/keywords)
 
 ### Schedule (hands-off)
