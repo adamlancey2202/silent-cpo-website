@@ -71,6 +71,29 @@ export function ContentPanel({ apiFetch }: { apiFetch: Fetch }) {
     } catch (err) { setError(err instanceof Error ? err.message : "Save failed"); }
     finally { setSaving(false); }
   }
+  async function removeArticle(entry: Entry) {
+    if (saving || triggeringDraft) return;
+    const live = entry.status === "published";
+    const prompt = live
+      ? `Delete “${entry.title}” permanently? The live blog page will disappear. This cannot be undone.`
+      : `Delete “${entry.title}” permanently? This cannot be undone.`;
+    if (!window.confirm(prompt)) return;
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const res = await apiFetch(`/api/admin/content/${entry.id}`, { method: "DELETE" });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Delete failed");
+      setEntries((all) => all.filter((e) => e.id !== entry.id));
+      if (editor?.id === entry.id) setEditor(null);
+      setNotice(result.message || "Article deleted.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setSaving(false);
+    }
+  }
   async function triggerDraft() {
     if (triggeringDraft || saving) return;
     setTriggeringDraft(true); setError(""); setNotice("");
@@ -145,9 +168,25 @@ export function ContentPanel({ apiFetch }: { apiFetch: Fetch }) {
         {editor.kind === "article" && <label className="block space-y-2 text-sm"><span>URL slug</span><input className={input} pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="how-to-plan-your-app" value={editor.slug ?? ""} onChange={(e) => setEditor({ ...editor, slug: e.target.value || undefined })} /><span className="text-xs text-mist/60">Lowercase words separated by hyphens. Locked after first publication.</span></label>}
         {fields[editor.kind].map((field) => <label key={field.key} className="block space-y-2 text-sm"><span>{field.label}</span>{field.type === "textarea" ? <textarea rows={field.key === "body" ? 18 : 4} className={input} value={String(editor.data[field.key] ?? "")} onChange={(e) => setEditor({ ...editor, data: { ...editor.data, [field.key]: e.target.value } })} /> : field.type === "select" ? <select className={input} value={String(editor.data[field.key] ?? "")} onChange={(e) => setEditor({ ...editor, data: { ...editor.data, [field.key]: e.target.value } })}>{field.options?.map((o) => <option key={o}>{o}</option>)}</select> : <input className={input} type={field.type ?? "text"} min={field.type === "number" ? 1 : undefined} max={field.type === "number" ? 5 : undefined} value={String(editor.data[field.key] ?? "")} onChange={(e) => setEditor({ ...editor, data: { ...editor.data, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value } })} />}{field.help && <span className="block text-xs text-mist/60">{field.help}</span>}</label>)}
         {editor.kind === "article" && <><button type="button" className={button} onClick={() => setPreview(!preview)}>{preview ? "Hide preview" : "Preview article"}</button>{preview && <article className="rounded-xl border border-mist/15 p-6"><h2 className="mb-6 text-3xl">{editor.title}</h2><ArticleBody body={String(editor.data.body ?? "")} /></article>}</>}
-        <div className="flex flex-wrap items-center gap-4"><button disabled={saving} className={`${button} bg-gold text-deep`}>{saving ? "Saving…" : editor.kind === "article" && editor.status === "published" ? "Save & publish" : "Save changes"}</button>{editor.kind === "article" && <p className="text-xs text-mist/65">Draft, review and archived articles are private. Saving a published article updates the live page.</p>}</div>
+        <div className="flex flex-wrap items-center gap-4">
+          <button disabled={saving} className={`${button} bg-gold text-deep`}>{saving ? "Saving…" : editor.kind === "article" && editor.status === "published" ? "Save & publish" : "Save changes"}</button>
+          {editor.kind === "article" && editor.id && (
+            <button
+              type="button"
+              disabled={saving}
+              className={`${button} border-red-400/40 text-red-300 hover:border-red-400`}
+              onClick={() => {
+                const match = entries.find((e) => e.id === editor.id);
+                if (match) void removeArticle(match);
+              }}
+            >
+              Delete article
+            </button>
+          )}
+          {editor.kind === "article" && <p className="text-xs text-mist/65">Draft, review and archived articles are private. Saving a published article updates the live page.</p>}
+        </div>
       </form>}
-      <div className="space-y-3">{visible.length ? visible.map((entry) => <article key={entry.id} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-mist/15 p-5"><div className="min-w-0"><p className="text-xs uppercase tracking-wider text-gold">{entry.status}{entry.kind === "topic" ? ` · Priority ${entry.data.priority}${entry.data.plannedDate ? ` · ${entry.data.plannedDate}` : ""}` : ""}</p><h3 className="mt-1 break-words text-lg">{entry.title}</h3><p className="mt-1 text-xs text-mist/60">Updated {new Date(entry.updatedAt).toLocaleString("en-GB")}</p></div><div className="flex gap-3">{entry.kind === "article" && entry.status === "published" && <a className={button} target="_blank" rel="noopener noreferrer" href={`/blog/${entry.slug}`}>View live</a>}<button className={button} disabled={saving} onClick={() => open(entry)}>Edit<span className="sr-only"> {entry.title}</span></button></div></article>) : <div className="rounded-xl border border-dashed border-mist/20 p-8 text-sm text-mist/65">{search || statusFilter ? "No entries match your filters." : `No ${labels[section].toLowerCase()} saved yet. Start with the button above.`}</div>}</div>
+      <div className="space-y-3">{visible.length ? visible.map((entry) => <article key={entry.id} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-mist/15 p-5"><div className="min-w-0"><p className="text-xs uppercase tracking-wider text-gold">{entry.status}{entry.kind === "topic" ? ` · Priority ${entry.data.priority}${entry.data.plannedDate ? ` · ${entry.data.plannedDate}` : ""}` : ""}</p><h3 className="mt-1 break-words text-lg">{entry.title}</h3><p className="mt-1 text-xs text-mist/60">Updated {new Date(entry.updatedAt).toLocaleString("en-GB")}</p></div><div className="flex flex-wrap gap-3">{entry.kind === "article" && entry.status === "published" && <a className={button} target="_blank" rel="noopener noreferrer" href={`/blog/${entry.slug}`}>View live</a>}<button className={button} disabled={saving} onClick={() => open(entry)}>Edit<span className="sr-only"> {entry.title}</span></button>{entry.kind === "article" && <button type="button" className={`${button} border-red-400/30 text-red-300 hover:border-red-400`} disabled={saving} onClick={() => void removeArticle(entry)}>Delete</button>}</div></article>) : <div className="rounded-xl border border-dashed border-mist/20 p-8 text-sm text-mist/65">{search || statusFilter ? "No entries match your filters." : `No ${labels[section].toLowerCase()} saved yet. Start with the button above.`}</div>}</div>
     </>}
   </section>;
 }
