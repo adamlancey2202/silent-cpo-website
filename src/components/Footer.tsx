@@ -21,7 +21,7 @@ export function Footer() {
         </p>
 
         <div className="flex flex-wrap justify-center gap-6 text-xs text-mist/40">
-          <Link href="/blog" className="transition hover:text-gold">Insights</Link>
+          <Link href="/blog" className="transition hover:text-gold">Blog</Link>
           <Link href="/#faq" className="transition hover:text-gold">FAQs</Link>
           <a href="/privacy" className="transition hover:text-gold">
             Privacy

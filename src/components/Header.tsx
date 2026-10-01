@@ -4,17 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { siteNavItems } from "@/lib/nav";
 import { siteConfig } from "@/lib/site";
 import { MobileMenu, MenuButton } from "./MobileMenu";
-
-const navItems = [
-  { label: "Work", href: "/#work" },
-  { label: "Philosophy", href: "/#philosophy" },
-  { label: "Capabilities", href: "/#capabilities" },
-  { label: "Process", href: "/#process" },
-  { label: "Insights", href: "/blog" },
-  { label: "Contact", href: "/#contact" },
-];
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -47,15 +39,15 @@ export function Header() {
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-5 lg:gap-8 lg:flex">
-            {navItems.map((item) => (
-              <a
+          <nav className="hidden items-center gap-4 md:flex md:gap-5 lg:gap-8" aria-label="Main">
+            {siteNavItems.map((item) => (
+              <Link
                 key={item.href}
                 href={item.href}
                 className="text-xs tracking-[0.12em] text-mist/70 transition hover:text-gold"
               >
                 {item.label.toUpperCase()}
-              </a>
+              </Link>
             ))}
             <a
               href={`mailto:${siteConfig.contact.email}`}

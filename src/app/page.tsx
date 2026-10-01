@@ -10,6 +10,7 @@ import { SelectedWork } from "@/components/SelectedWork";
 import { Philosophy } from "@/components/Philosophy";
 import { Capabilities } from "@/components/Capabilities";
 import { Process } from "@/components/Process";
+import { BlogTeaser } from "@/components/BlogTeaser";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
 
@@ -28,6 +29,7 @@ export default function HomePage() {
         <Philosophy />
         <Capabilities />
         <Process />
+        <BlogTeaser />
         <FAQ />
         <Contact />
       </main>

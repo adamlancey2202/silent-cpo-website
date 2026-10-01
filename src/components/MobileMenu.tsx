@@ -3,16 +3,13 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
+import { siteNavItems } from "@/lib/nav";
 import { siteConfig } from "@/lib/site";
 
-const navItems = [
-  { label: "Work", href: "/#work", num: "01" },
-  { label: "Philosophy", href: "/#philosophy", num: "02" },
-  { label: "Capabilities", href: "/#capabilities", num: "03" },
-  { label: "Process", href: "/#process", num: "04" },
-  { label: "Insights", href: "/blog", num: "05" },
-  { label: "Contact", href: "/#contact", num: "06" },
-];
+const navItems = siteNavItems.map((item, i) => ({
+  ...item,
+  num: String(i + 1).padStart(2, "0"),
+}));
 
 interface MobileMenuProps {
   open: boolean;
