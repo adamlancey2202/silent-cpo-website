@@ -13,6 +13,8 @@ export function ContentPanel({ apiFetch }: { apiFetch: Fetch }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
   const [configured, setConfigured] = useState(false);
+  const [draftWebhookConfigured, setDraftWebhookConfigured] = useState(false);
+  const [triggeringDraft, setTriggeringDraft] = useState(false);
   const [section, setSection] = useState<ContentKind | "automation">("profile");
   const [editor, setEditor] = useState<Editor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,11 +29,12 @@ export function ContentPanel({ apiFetch }: { apiFetch: Fetch }) {
     const res = await apiFetch("/api/admin/content");
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Could not load content");
-    return data as { entries: Entry[]; runs: Run[]; automationConfigured: boolean };
+    return data as { entries: Entry[]; runs: Run[]; automationConfigured: boolean; draftWebhookConfigured: boolean };
   }, [apiFetch]);
-  const applyContent = useCallback((data: { entries: Entry[]; runs: Run[]; automationConfigured: boolean }) => {
+  const applyContent = useCallback((data: { entries: Entry[]; runs: Run[]; automationConfigured: boolean; draftWebhookConfigured: boolean }) => {
     setOrigin(window.location.origin); setError("");
     setEntries(data.entries); setRuns(data.runs); setConfigured(data.automationConfigured);
+    setDraftWebhookConfigured(data.draftWebhookConfigured);
   }, []);
   const load = useCallback(async () => {
     try { applyContent(await fetchContent()); }
@@ -67,6 +70,19 @@ export function ContentPanel({ apiFetch }: { apiFetch: Fetch }) {
     } catch (err) { setError(err instanceof Error ? err.message : "Save failed"); }
     finally { setSaving(false); }
   }
+  async function triggerDraft() {
+    if (triggeringDraft || saving) return;
+    setTriggeringDraft(true); setError(""); setNotice("");
+    try {
+      const res = await apiFetch("/api/admin/content/trigger-draft", { method: "POST" });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Could not start draft workflow");
+      setNotice(result.message || "Draft workflow started.");
+      setTimeout(() => { void load(); }, 2000);
+    } catch (err) { setError(err instanceof Error ? err.message : "Could not start draft workflow"); }
+    finally { setTriggeringDraft(false); }
+  }
+  const readyTopics = entries.filter((e) => e.kind === "topic" && e.status === "ready").length;
   const visible = entries.filter((e) => e.kind === section && (!statusFilter || e.status === statusFilter) && e.title.toLowerCase().includes(search.toLowerCase()));
   const profile = entries.find((e) => e.kind === "profile");
   return <section className="space-y-6" aria-label="Content studio">
@@ -83,7 +99,20 @@ export function ContentPanel({ apiFetch }: { apiFetch: Fetch }) {
         <p className="mt-4 break-all rounded bg-deep p-3 font-mono text-xs">GET / POST {origin}/api/automation/content</p>
         <p className="mt-3 break-all rounded bg-deep p-3 font-mono text-xs">POST {origin}/api/automation/content/topics</p>
         <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-mist/75"><li>Approve the business profile (including <strong className="font-medium text-mist">Competitor websites and notes</strong> — the topic planner reads this field from the approved profile).</li><li>Run the n8n <strong className="font-medium text-mist">topic planner</strong> workflow to create Ready topics from competitors (then the draft workflow).</li><li>Or set a topic to Ready manually and run the draft workflow.</li><li>Review drafts in Articles. Publishing is only available here in admin.</li></ol>
-        <p className="mt-4 text-sm text-mist/75">This connection can read approved material and add drafts. It cannot publish, change settings, or access enquiries and payments. OpenAI credentials stay in n8n. Local n8n must be running when you click Execute Workflow.</p>
+        <p className="mt-4 text-sm text-mist/75">This connection can read approved material and add drafts. It cannot publish, change settings, or access enquiries and payments. OpenAI credentials stay in n8n.</p>
+        <div className="mt-6 flex flex-wrap items-center gap-4 border-t border-mist/15 pt-6">
+          <button
+            type="button"
+            disabled={triggeringDraft || saving || !configured || !draftWebhookConfigured || readyTopics === 0}
+            className={`${button} bg-gold text-deep`}
+            onClick={() => void triggerDraft()}
+          >
+            {triggeringDraft ? "Starting draft…" : "Generate draft now"}
+          </button>
+          {!draftWebhookConfigured && <p className="text-sm text-mist/60">Set <span className="font-mono text-xs">N8N_DRAFT_WEBHOOK_URL</span> on the server to enable this button.</p>}
+          {draftWebhookConfigured && readyTopics === 0 && <p className="text-sm text-mist/60">No Ready topics — approve or create topics first.</p>}
+          {draftWebhookConfigured && readyTopics > 0 && <p className="text-sm text-mist/60">{readyTopics} Ready topic{readyTopics === 1 ? "" : "s"} available.</p>}
+        </div>
       </div>
       <div className="rounded-xl border border-mist/15 p-6"><h3 className="text-xl">Draft delivery history</h3><p className="mt-2 text-sm text-mist/60">Latest 50 successful deliveries. Failed generation and connection attempts remain in n8n’s execution log.</p>{runs.length ? runs.map((run) => <div key={run.id} className="mt-4 border-t border-mist/15 pt-4 text-sm"><p>{run.message}</p><p className="mt-1 break-all text-mist/60">{new Date(run.createdAt).toLocaleString("en-GB")} · {run.requestKey}</p></div>) : <p className="mt-4 text-sm text-mist/60">No drafts received from n8n yet.</p>}</div>
     </div> : <>

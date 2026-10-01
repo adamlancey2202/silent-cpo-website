@@ -10,7 +10,12 @@ export async function GET() {
       db.contentEntry.findMany({ orderBy: { updatedAt: "desc" } }),
       db.contentRun.findMany({ orderBy: { createdAt: "desc" }, take: 50, select: { id: true, requestKey: true, articleId: true, topicId: true, message: true, createdAt: true } }),
     ]);
-    return json({ entries, runs, automationConfigured: Boolean(process.env.N8N_CONTENT_TOKEN) });
+    return json({
+      entries,
+      runs,
+      automationConfigured: Boolean(process.env.N8N_CONTENT_TOKEN),
+      draftWebhookConfigured: Boolean(process.env.N8N_DRAFT_WEBHOOK_URL?.trim()),
+    });
   } catch (error) { return apiError(error); }
 }
 export async function POST(request: Request) {

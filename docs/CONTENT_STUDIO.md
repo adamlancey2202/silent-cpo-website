@@ -9,7 +9,7 @@ Open `/admin`, sign in with the existing admin secret, and choose **Content**.
 - Topic planner: search phrase, audience, purpose, priority, brief, rationale, related page, planned writing date and status. Dates are planning aids, not a publisher scheduler. Ready topics are offered to n8n.
 - Articles: editable title, slug, summary, body, SEO fields, private source notes and preview. Draft → review → published is an editorial process. Set Published and click Save & publish when ready. Set Draft or Archived to remove an article from the public blog and sitemap. Editing a published article changes its live content immediately. URLs remain fixed after first publication.
 - Backlink opportunities: page, proposed destination, contact, relevance, draft outreach and notes, with progress statuses. No emails or backlinks are sent/placed by this feature.
-- n8n & history: endpoint, setup state, and the last 50 successful draft deliveries. Failures that do not reach the site stay in n8n’s execution log.
+- n8n & history: endpoint, setup state, **Generate draft now** (when `N8N_DRAFT_WEBHOOK_URL` is set), and the last 50 successful draft deliveries. Failures that do not reach the site stay in n8n’s execution log.
 - `/blog` and `/blog/[slug]`: published articles only, organisation byline, metadata, article schema, sitemap entries and contact CTA. Drafts return 404. HTML is escaped. Supported body syntax: paragraphs, separate #/##/### heading blocks, - bullet blocks, and http(s) Markdown links. Images, raw HTML, arbitrary embeds and executable MDX are deliberately not supported.
 
 The site does not run OpenAI calls or n8n schedules. Manual authoring works immediately. Topic selection/generation workflows are the next integration step once local n8n is running.
@@ -22,6 +22,7 @@ Two additive tables: `ContentEntry` (typed/validated data with versions) and `Co
 2. Review and apply the additive migration: `npm run db:deploy`.
 3. Deploy the site normally. The existing build script also applies migrations when a database is configured.
 4. Configure `N8N_CONTENT_TOKEN` as a long random secret on the site server. Use a separate token from `ADMIN_SECRET`; never prefix it with NEXT_PUBLIC. Rotate by replacing it on the server and in n8n.
+5. Optional: `N8N_DRAFT_WEBHOOK_URL` — HTTPS production webhook URL from the n8n **draft** workflow (Webhooks node). Enables **Generate draft now** in admin → **n8n & history**. The URL is server-only; it is not exposed to the browser.
 5. Store the token in an n8n Header Auth credential as `Authorization: Bearer <token>`. Do not put it in prompts or workflow exports.
 
 n8n can run in Docker on a local computer. The computer and n8n must be awake for manual execution. If the site is deployed, call its HTTPS URL. If n8n is in Docker and the site runs on the Mac, use `http://host.docker.internal:3001` rather than localhost. The admin screen shows the current browser origin; adjust for Docker as needed.
