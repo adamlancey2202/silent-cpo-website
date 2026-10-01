@@ -2,7 +2,8 @@ export type PlatformCategory =
   | "Infrastructure"
   | "Payments"
   | "Messaging"
-  | "Security";
+  | "Security"
+  | "Analytics";
 
 export type PlatformLink = {
   label: "Dashboard" | "Billing" | "Usage" | "Docs";
@@ -29,6 +30,7 @@ export const PLATFORM_CATEGORIES: PlatformCategory[] = [
   "Payments",
   "Messaging",
   "Security",
+  "Analytics",
 ];
 
 export const PLATFORM_PROVIDERS: PlatformProvider[] = [
@@ -107,6 +109,19 @@ export const PLATFORM_PROVIDERS: PlatformProvider[] = [
       { label: "Dashboard", href: "https://app.mailersend.com" },
       { label: "Usage", href: "https://app.mailersend.com/activity" },
       { label: "Billing", href: "https://app.mailersend.com/billing" },
+    ],
+  },
+  {
+    id: "google-analytics",
+    name: "Google Analytics 4",
+    category: "Analytics",
+    usedFor: "Traffic and blog article performance (page paths under /blog/).",
+    costHint: "Free for standard web analytics at studio traffic levels.",
+    check: "Set the measurement ID in Admin → Analytics, or GA4_MEASUREMENT_ID on the server.",
+    envKeys: ["GA4_MEASUREMENT_ID"],
+    links: [
+      { label: "Dashboard", href: "https://analytics.google.com/" },
+      { label: "Docs", href: "https://support.google.com/analytics/answer/9304153" },
     ],
   },
   {

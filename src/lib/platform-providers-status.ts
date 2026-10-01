@@ -25,6 +25,7 @@ const CONFIGURED: Record<string, () => boolean> = {
     envSet("MAILERSEND_API_KEY") && envSet("MAILERSEND_FROM_EMAIL"),
   turnstile: () =>
     envSet("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY"),
+  "google-analytics": () => envSet("GA4_MEASUREMENT_ID"),
 };
 
 export function buildPlatformDashboard(): PlatformProviderCard[] {

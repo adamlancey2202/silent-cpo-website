@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, DM_Sans, JetBrains_Mono } from "next/font/google";
+import { AnalyticsScripts } from "@/components/AnalyticsScripts";
 import { isPreviewDeployment } from "@/lib/indexing";
+import { getActiveGa4MeasurementId } from "@/lib/site-settings";
 import { siteConfig } from "@/lib/site";
 import "./globals.css";
 
@@ -87,11 +89,12 @@ export const metadata: Metadata = {
   category: "technology",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const ga4MeasurementId = await getActiveGa4MeasurementId();
 
   return (
     <html
@@ -103,7 +106,10 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/logo.jpg" />
         <link rel="alternate" type="text/plain" href="/llms.txt" title="About SilentCPO" />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        {!isPreviewDeployment && <AnalyticsScripts measurementId={ga4MeasurementId} />}
+      </body>
     </html>
   );
 }

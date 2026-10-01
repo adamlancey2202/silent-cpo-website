@@ -10,13 +10,15 @@ import {
   LayoutDashboard,
   RefreshCw,
   Layers,
+  BarChart3,
 } from "lucide-react";
+import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { ContentPanel } from "@/components/admin/ContentPanel";
 import { PlatformPanel } from "@/components/admin/PlatformPanel";
 import { RevenueCards } from "@/components/admin/RevenueCards";
 import { formatMoney } from "@/lib/revenue";
 
-type Tab = "overview" | "contacts" | "payments" | "platform" | "content";
+type Tab = "overview" | "contacts" | "payments" | "platform" | "content" | "analytics";
 
 interface Contact {
   id: string;
@@ -238,6 +240,7 @@ export default function AdminPage() {
     { id: "contacts", label: "Enquiries", icon: Mail },
     { id: "payments", label: "Stripe", icon: CreditCard },
     { id: "content", label: "Content", icon: FileText },
+    { id: "analytics", label: "Analytics", icon: BarChart3 },
     { id: "platform", label: "Platform", icon: Layers },
   ];
 
@@ -422,6 +425,8 @@ export default function AdminPage() {
         )}
 
         {tab === "content" && <ContentPanel apiFetch={apiFetch} />}
+
+        {tab === "analytics" && <AnalyticsPanel apiFetch={apiFetch} />}
 
         {tab === "platform" && <PlatformPanel apiFetch={apiFetch} />}
 

@@ -82,3 +82,11 @@ model ContentTopicPlanRun {
   message     String
   createdAt   DateTime @default(now())
 }
+
+// Public marketing settings (measurement IDs are not secrets; editable in admin).
+model SiteSettings {
+  id               String   @id @default("default")
+  ga4MeasurementId String   @default("")
+  version          Int      @default(1)
+  updatedAt        DateTime @updatedAt
+}
