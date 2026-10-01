@@ -65,7 +65,7 @@ export function isPortfolioOrOwnSite(url: string): string | null {
   return null;
 }
 
-export function planCompetitorFetches(competitorNotes: string, maxFetch = 15) {
+export function planCompetitorFetches(competitorNotes: string, maxFetch = 20) {
   const notes = competitorNotes.trim();
   const skipped: { url: string; reason: string }[] = [];
   const fetchUrls: string[] = [];

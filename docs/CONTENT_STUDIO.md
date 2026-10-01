@@ -34,7 +34,9 @@ Both endpoints require the automation bearer token and return Cache-Control: no-
 
 ### GET /api/automation/content
 
-Returns `{profile, sources, topics, existingTopics, existingArticles, competitorPlanning}`.
+Query `?context=topic-plan` omits `sources` (portfolio evidence is for the **draft** workflow only). Default `context=draft` includes approved sources.
+
+Returns `{profile, sources?, topics, existingTopics, existingArticles, competitorPlanning}`.
 
 - `competitorPlanning` (when profile is approved): `{ notes, fetchUrls, skipped, competitorLines }`. The site removes SilentCPO and portfolio/client build URLs from `fetchUrls`; n8n should fetch only `fetchUrls`, not raw notes URLs blindly.
 

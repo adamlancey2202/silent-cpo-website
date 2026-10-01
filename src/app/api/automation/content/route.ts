@@ -13,6 +13,8 @@ function allowed(request: Request) {
 }
 export async function GET(request: Request) {
   if (!allowed(request)) return json({ error: "Unauthorized" }, 401);
+  const context = new URL(request.url).searchParams.get("context") ?? "draft";
+  const topicPlan = context === "topic-plan";
   try {
     const entries = await db.contentEntry.findMany({ where: { OR: [
       { kind: { in: ["profile", "source"] }, status: "approved" },
@@ -29,12 +31,20 @@ export async function GET(request: Request) {
         ? String((profile.data as { competitors?: string }).competitors ?? "")
         : "";
     return json({
+      context: topicPlan ? "topic-plan" : "draft",
       profile,
-      sources: entries.filter((e) => e.kind === "source"),
+      ...(topicPlan
+        ? {}
+        : { sources: entries.filter((e) => e.kind === "source") }),
       topics: entries.filter((e) => e.kind === "topic"),
       existingTopics,
       existingArticles: entries.filter((e) => e.kind === "article").map(({ id, title, slug, status }) => ({ id, title, slug, status })),
       competitorPlanning: profile?.status === "approved" ? planCompetitorFetches(competitorNotes) : null,
+      ...(topicPlan
+        ? {
+            note: "Topic planning uses profile.data.competitors and competitorPlanning.fetchUrls only. Portfolio source library is omitted here; it is used later when writing drafts.",
+          }
+        : {}),
     });
   } catch (error) { return apiError(error); }
 }
