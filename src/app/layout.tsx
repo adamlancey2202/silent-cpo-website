@@ -105,11 +105,11 @@ export default async function RootLayout({
         <link rel="icon" href="/images/logo.jpg" type="image/jpeg" />
         <link rel="apple-touch-icon" href="/images/logo.jpg" />
         <link rel="alternate" type="text/plain" href="/llms.txt" title="About SilentCPO" />
+        {!isPreviewDeployment && ga4MeasurementId ? (
+          <AnalyticsScripts measurementId={ga4MeasurementId} />
+        ) : null}
       </head>
-      <body>
-        {children}
-        {!isPreviewDeployment && <AnalyticsScripts measurementId={ga4MeasurementId} />}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

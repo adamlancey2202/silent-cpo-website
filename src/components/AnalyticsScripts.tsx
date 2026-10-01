@@ -8,13 +8,18 @@ export function AnalyticsScripts({ measurementId }: Props) {
   if (!measurementId) return null;
   return (
     <>
-      <Script src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`} strategy="afterInteractive" />
-      <Script id="scpo-ga4-init" strategy="afterInteractive">
+      {/* Google tag (gtag.js) — same as GA4 “View tag instructions”; ID comes from Admin → Analytics. */}
+      <Script
+        async
+        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics-gtag" strategy="afterInteractive">
         {`
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', '${measurementId}', { send_page_view: false });
+gtag('config', '${measurementId}');
 `}
       </Script>
       <Suspense fallback={null}>

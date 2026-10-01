@@ -6,6 +6,8 @@
 2. **Admin → Data streams → Web** → copy the **Measurement ID** (`G-XXXXXXXXXX`).
 3. In **SilentCPO Admin → Analytics**, paste the ID and click **Save analytics**.
 
+You do **not** paste the HTML snippet from GA4 into the site — the layout injects the same **Google tag (gtag.js)** automatically using that ID.
+
 Alternatively set server env `GA4_MEASUREMENT_ID` (used only until you save in admin, which stores the value in Postgres).
 
 Tracking is **off** on `/admin` and on Vercel preview deployments.

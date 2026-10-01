@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 declare global {
   interface Window {
@@ -15,10 +15,15 @@ type Props = { measurementId: string };
 export function AnalyticsPageViews({ measurementId }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const initialLoad = useRef(true);
 
   useEffect(() => {
     if (!measurementId || typeof window.gtag !== "function") return;
     if (pathname.startsWith("/admin")) return;
+    if (initialLoad.current) {
+      initialLoad.current = false;
+      return;
+    }
     const query = searchParams.toString();
     const pagePath = query ? `${pathname}?${query}` : pathname;
     window.gtag("event", "page_view", {
