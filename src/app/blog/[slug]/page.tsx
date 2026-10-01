@@ -59,7 +59,7 @@ export default async function ArticlePage({ params }: Props) {
         <Link href="/blog" className="text-sm text-gold">
           ← All insights
         </Link>
-        <BlogCoverImage className="mt-6" priority />
+        <BlogCoverImage className="mt-6 !max-w-3xl" priority />
         <article className="mt-8">
           <p className="text-xs text-mist/60">
             SilentCPO ·{" "}

@@ -107,7 +107,7 @@ Default policy (implemented in template):
 3. Sort by `data.priority` ascending (**1 = highest**).
 4. Pick the first topic.
 5. Reject if `title` matches an existing article title (case-insensitive).
-6. Build `requestKey`: `topic-{topicId}-draft-v1` (bump suffix only when intentionally creating a new generation attempt).
+6. Build `requestKey`: `topic-{topicId}-draft-{timestamp}` (unique per run; the API updates an existing draft when the same key is reused with new content).
 
 To process a different topic, change priority/planned date in admin or mark the current topic Drafted/archived before the next run.
 
@@ -174,7 +174,7 @@ Turn **Active** on only when cron-job.org (or similar) should call the webhook. 
 
 ### 5. Regenerating a topic
 
-The default `requestKey` is `topic-{id}-draft-v1`. After a successful POST the topic is **Drafted** (no longer Ready). To run again, create a new Ready topic or use a new key suffix (`draft-v2`) only when you intentionally want a new generation attempt.
+Each run uses `topic-{id}-draft-{timestamp}`. After a successful POST the topic is **Drafted** (no longer Ready). **Generate draft again** for the same topic updates the existing draft article if the topic is already drafted. Re-import the workflow JSON after repo updates so **Select topic** uses the timestamp key.
 
 ### 6. Optional: extend your existing workflow
 

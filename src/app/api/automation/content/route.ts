@@ -11,6 +11,13 @@ function allowed(request: Request) {
   const a = Buffer.from(actual), b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
 }
+
+function topicIdFromArticleData(data: unknown): string | null {
+  if (!data || typeof data !== "object" || !("topicId" in data)) return null;
+  const id = String((data as { topicId?: string }).topicId ?? "").trim();
+  return id || null;
+}
+
 export async function GET(request: Request) {
   if (!allowed(request)) return json({ error: "Unauthorized" }, 401);
   const context = new URL(request.url).searchParams.get("context") ?? "draft";
@@ -48,6 +55,7 @@ export async function GET(request: Request) {
     });
   } catch (error) { return apiError(error); }
 }
+
 export async function POST(request: Request) {
   if (!allowed(request)) return json({ error: "Unauthorized" }, 401);
   try {
@@ -56,21 +64,92 @@ export async function POST(request: Request) {
     const v = parsed.data;
     const hash = createHash("sha256").update(JSON.stringify(v)).digest("hex");
     const previous = await db.contentRun.findUnique({ where: { requestKey: v.requestKey } });
-    if (previous) return previous.requestHash === hash ? json({ articleId: previous.articleId, replayed: true }) : json({ error: "Request key was already used with different content." }, 409);
+    if (previous) {
+      if (previous.requestHash === hash) return json({ articleId: previous.articleId, replayed: true });
+      const updated = await db.$transaction(async (tx) => {
+        const article = await tx.contentEntry.findUnique({ where: { id: previous.articleId } });
+        if (
+          !article ||
+          article.kind !== "article" ||
+          !["draft", "review"].includes(article.status) ||
+          topicIdFromArticleData(article.data) !== v.topicId
+        ) {
+          return null;
+        }
+        if (article.publishedAt && article.slug !== v.slug) throw new Error("LOCKED_SLUG");
+        const saved = await tx.contentEntry.update({
+          where: { id: article.id },
+          data: {
+            title: v.title,
+            slug: v.slug,
+            data: { ...v.data, topicId: v.topicId },
+            version: { increment: 1 },
+          },
+        });
+        await tx.contentRun.update({
+          where: { requestKey: v.requestKey },
+          data: { requestHash: hash, message: "Draft updated from a new automation run." },
+        });
+        return saved;
+      });
+      if (updated) return json({ articleId: updated.id, replayed: false, updated: true });
+      return json({ error: "Request key was already used with different content. Use a new requestKey or edit the draft in admin." }, 409);
+    }
+
     const article = await db.$transaction(async (tx) => {
       const topic = await tx.contentEntry.findUnique({ where: { id: v.topicId } });
-      if (topic?.kind !== "topic" || topic.status !== "ready") throw new Error("TOPIC_NOT_READY");
+      if (topic?.kind !== "topic") throw new Error("TOPIC_NOT_READY");
+
       const approved = await tx.contentEntry.count({ where: { id: { in: v.data.sourceIds }, kind: "source", status: "approved" } });
       if (approved !== new Set(v.data.sourceIds).size) throw new Error("SOURCE_NOT_APPROVED");
-      const claimed = await tx.contentEntry.updateMany({ where: { id: topic.id, version: topic.version, status: "ready" }, data: { status: "drafted", version: { increment: 1 } } });
-      if (!claimed.count) throw new Error("TOPIC_NOT_READY");
-      const created = await tx.contentEntry.create({ data: { kind: "article", status: "draft", title: v.title, slug: v.slug, data: { ...v.data, topicId: v.topicId } } });
-      await tx.contentRun.create({ data: { requestKey: v.requestKey, requestHash: hash, articleId: created.id, topicId: topic.id, message: "Draft received. Awaiting editorial review." } });
-      return created;
+
+      if (topic.status === "ready") {
+        const claimed = await tx.contentEntry.updateMany({
+          where: { id: topic.id, version: topic.version, status: "ready" },
+          data: { status: "drafted", version: { increment: 1 } },
+        });
+        if (!claimed.count) throw new Error("TOPIC_NOT_READY");
+        const created = await tx.contentEntry.create({
+          data: { kind: "article", status: "draft", title: v.title, slug: v.slug, data: { ...v.data, topicId: v.topicId } },
+        });
+        await tx.contentRun.create({
+          data: { requestKey: v.requestKey, requestHash: hash, articleId: created.id, topicId: topic.id, message: "Draft received. Awaiting editorial review." },
+        });
+        return created;
+      }
+
+      if (topic.status === "drafted") {
+        const drafts = await tx.contentEntry.findMany({
+          where: { kind: "article", status: { in: ["draft", "review"] } },
+        });
+        const existing = drafts.find((a) => topicIdFromArticleData(a.data) === topic.id);
+        if (!existing) throw new Error("TOPIC_NOT_READY");
+        if (existing.publishedAt && existing.slug !== v.slug) throw new Error("LOCKED_SLUG");
+        const saved = await tx.contentEntry.update({
+          where: { id: existing.id },
+          data: {
+            title: v.title,
+            slug: v.slug,
+            data: { ...v.data, topicId: v.topicId },
+            version: { increment: 1 },
+          },
+        });
+        await tx.contentRun.create({
+          data: { requestKey: v.requestKey, requestHash: hash, articleId: saved.id, topicId: topic.id, message: "Draft refreshed for an already-drafted topic." },
+        });
+        return saved;
+      }
+
+      throw new Error("TOPIC_NOT_READY");
     });
     return json({ articleId: article.id, replayed: false }, 201);
   } catch (error) {
-    if (error instanceof Error && ["TOPIC_NOT_READY", "SOURCE_NOT_APPROVED"].includes(error.message)) return json({ error: "The topic is no longer ready or a source is no longer approved. Refresh context before retrying." }, 409);
+    if (error instanceof Error && error.message === "LOCKED_SLUG") {
+      return json({ error: "An article’s URL cannot change after its first publication." }, 400);
+    }
+    if (error instanceof Error && ["TOPIC_NOT_READY", "SOURCE_NOT_APPROVED"].includes(error.message)) {
+      return json({ error: "The topic is no longer ready or a source is no longer approved. Refresh context before retrying." }, 409);
+    }
     return apiError(error);
   }
 }

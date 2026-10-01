@@ -12,7 +12,7 @@ export function BlogCoverImage({ className = "", priority = false }: Props) {
   const { alt } = blogOgImageMeta();
 
   return (
-    <div className={`relative aspect-[1200/630] w-full overflow-hidden rounded-2xl border border-mist/15 bg-midnight/50 ${className}`}>
+    <div className={`relative mx-auto aspect-[1200/630] w-full max-w-4xl overflow-hidden rounded-2xl border border-mist/15 bg-midnight/50 ${className}`}>
       <Image
         src={src}
         alt={alt}
