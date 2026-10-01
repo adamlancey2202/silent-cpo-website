@@ -6,7 +6,6 @@ import { publishedArticles } from "@/lib/content/public";
 import { blogOgImageMeta } from "@/lib/blog-media";
 import { siteConfig } from "@/lib/site";
 import { BlogContactSection } from "@/components/BlogContactSection";
-import { BlogCoverImage } from "@/components/BlogCoverImage";
 import { BlogInlineCta } from "@/components/BlogInlineCta";
 
 export const dynamic = "force-dynamic";
@@ -30,8 +29,7 @@ export default async function BlogPage() {
     <>
       <Header />
       <main className="mx-auto min-h-screen max-w-6xl px-6 pb-24 pt-36">
-        <BlogCoverImage priority />
-        <p className="mt-10 text-xs tracking-widest text-gold">SILENTCPO INSIGHTS</p>
+        <p className="text-xs tracking-widest text-gold">SILENTCPO INSIGHTS</p>
         <h1 className="mt-4 font-[family-name:var(--font-display)] text-6xl text-bone">CLEAR THINKING. USEFUL BUILDS.</h1>
         <p className="mt-6 max-w-2xl text-mist/75">
           Practical notes on working out what your business needs and turning it into a digital product.
