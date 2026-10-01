@@ -73,3 +73,12 @@ model ContentRun {
   message     String
   createdAt   DateTime @default(now())
 }
+
+model ContentTopicPlanRun {
+  id          String   @id @default(cuid())
+  requestKey  String   @unique
+  requestHash String
+  topicIds    Json
+  message     String
+  createdAt   DateTime @default(now())
+}

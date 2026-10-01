@@ -1,0 +1,146 @@
+{
+  "name": "SilentCPO Content Studio — topic planner",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "content-studio-topics",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook (weekly)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 120],
+      "webhookId": "content-studio-topics"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "site", "name": "siteBaseUrl", "value": "https://silentcpo.me", "type": "string" },
+            { "id": "model", "name": "openAiModel", "value": "gpt-4o-mini", "type": "string" },
+            { "id": "max", "name": "maxTopics", "value": 8, "type": "number" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "config",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [240, 220]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.siteBaseUrl }}/api/automation/content",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "get-context",
+      "name": "GET content context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 220],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_SILENTCPO", "name": "SilentCPO Content API" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $input.first().json;\nconst config = $('Config').first().json;\nif (!ctx.profile?.id || ctx.profile.status !== 'approved') {\n  throw new Error('CONTENT_STUDIO: Approve the business profile in admin (include competitor URLs in Competitor websites and notes).');\n}\n\nconst competitorText = ctx.profile.data?.competitors || '';\nconst urls = [...competitorText.matchAll(/https?:\\/\\/[^\\s)\\]>\"']+/gi)].map((m) => m[0]).slice(0, 6);\n\nconst snapshots = [];\nfor (const url of urls) {\n  try {\n    const body = await this.helpers.httpRequest({\n      method: 'GET',\n      url,\n      timeout: 20000,\n      headers: { 'User-Agent': 'SilentCPO-TopicResearch/1.0 (internal)' },\n      json: false,\n    });\n    const snippet = String(body).replace(/<script[\\s\\S]*?<\\/script>/gi, ' ').replace(/<style[\\s\\S]*?<\\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, 6000);\n    snapshots.push({ url, snippet });\n  } catch (error) {\n    snapshots.push({ url, snippet: `(Could not fetch: ${error.message})` });\n  }\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    siteBaseUrl: config.siteBaseUrl,\n    openAiModel: config.openAiModel,\n    maxTopics: config.maxTopics,\n    competitorSnapshots: snapshots,\n    competitorNotes: competitorText,\n  },\n}];"
+      },
+      "id": "fetch-competitors",
+      "name": "Fetch competitor pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst p = row.profile.data;\nconst maxTopics = row.maxTopics || 8;\n\nconst catalog = (row.existingTopics ?? []).map((t) => ({\n  title: t.title,\n  keyword: t.data?.keyword,\n  status: t.status,\n}));\nconst articles = (row.existingArticles ?? []).map((a) => a.title);\n\nconst competitorBlock = row.competitorSnapshots?.length\n  ? row.competitorSnapshots.map((s) => `URL: ${s.url}\\n${s.snippet}`).join('\\n\\n---\\n\\n')\n  : row.competitorNotes || '(no competitor URLs — add https links to profile competitors field)';\n\nconst system = [\n  'You are an SEO topic strategist for SilentCPO (UK bespoke web/apps studio).',\n  'Propose original article topics that compete with rivals but do not copy them.',\n  'Never invent search volume, difficulty, or ranking predictions.',\n  'British English. Return JSON only.',\n].join(' ');\n\nconst user = [\n  `Propose up to ${maxTopics} new blog topics as JSON: { \"topics\": [ { \"title\", \"keyword\", \"audience\", \"intent\" (Guide|Comparison|Buying decision|Project story), \"rationale\", \"brief\", \"priority\" (1-5, 1 highest) } ] }`,\n  '',\n  '## Business profile',\n  `Audience: ${p.audience}`,\n  `Services: ${p.services}`,\n  `Positioning: ${p.positioning}`,\n  `Instructions: ${p.instructions}`,\n  `Exclusions: ${p.exclusions}`,\n  '',\n  '## Competitor intelligence',\n  competitorBlock,\n  '',\n  '## Existing topics (do not duplicate title or keyword)',\n  JSON.stringify(catalog),\n  '',\n  '## Published/draft articles (avoid overlap)',\n  articles.join('; ') || '(none)',\n  '',\n  'Prioritise gaps competitors cover that SilentCPO can answer with honest differentiation.',\n].join('\\n');\n\nconst planKey = `topic-plan-${new Date().toISOString().slice(0, 10)}`;\n\nreturn [{\n  json: {\n    siteBaseUrl: row.siteBaseUrl,\n    planRequestKey: planKey,\n    openAiBody: {\n      model: row.openAiModel,\n      response_format: { type: 'json_object' },\n      temperature: 0.5,\n      messages: [\n        { role: 'system', content: system },\n        { role: 'user', content: user },\n      ],\n    },\n  },\n}];"
+      },
+      "id": "build-prompt",
+      "name": "Build topic plan prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.openAiBody }}",
+        "options": {}
+      },
+      "id": "openai",
+      "name": "OpenAI topic plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 220],
+      "credentials": {
+        "openAiApi": { "id": "REPLACE_OPENAI", "name": "OpenAI account" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const api = $input.first().json;\nconst meta = $('Build topic plan prompt').first().json;\nconst content = api.choices?.[0]?.message?.content;\nif (!content) throw new Error('OpenAI: empty topic plan');\n\nlet parsed;\ntry {\n  parsed = JSON.parse(content);\n} catch {\n  throw new Error('OpenAI: topic plan was not valid JSON');\n}\n\nconst intents = new Set(['Guide', 'Comparison', 'Buying decision', 'Project story']);\nconst raw = Array.isArray(parsed.topics) ? parsed.topics : [];\nif (!raw.length) throw new Error('OpenAI: no topics returned');\n\nconst topics = raw.map((t) => ({\n  title: String(t.title ?? '').trim().slice(0, 200),\n  status: 'ready',\n  data: {\n    keyword: String(t.keyword ?? '').trim().slice(0, 500),\n    audience: String(t.audience ?? '').trim().slice(0, 500),\n    intent: intents.has(t.intent) ? t.intent : 'Guide',\n    rationale: String(t.rationale ?? '').trim().slice(0, 30000),\n    brief: String(t.brief ?? '').trim().slice(0, 30000),\n    priority: Math.min(5, Math.max(1, Number(t.priority) || 3)),\n    plannedDate: '',\n    targetUrl: '',\n  },\n})).filter((t) => t.title && t.data.keyword);\n\nif (!topics.length) throw new Error('OpenAI: topics missing title or keyword');\n\nreturn [{\n  json: {\n    siteBaseUrl: meta.siteBaseUrl,\n    topicPlanBody: {\n      requestKey: meta.planRequestKey,\n      topics,\n    },\n  },\n}];"
+      },
+      "id": "parse-plan",
+      "name": "Parse topic plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.siteBaseUrl }}/api/automation/content/topics",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.topicPlanBody }}",
+        "options": {}
+      },
+      "id": "save-topics",
+      "name": "Save topics to Content Studio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 220],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_SILENTCPO", "name": "SilentCPO Content API" }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Config", "type": "main", "index": 0 }]] },
+    "Webhook (weekly)": { "main": [[{ "node": "Config", "type": "main", "index": 0 }]] },
+    "Config": { "main": [[{ "node": "GET content context", "type": "main", "index": 0 }]] },
+    "GET content context": { "main": [[{ "node": "Fetch competitor pages", "type": "main", "index": 0 }]] },
+    "Fetch competitor pages": { "main": [[{ "node": "Build topic plan prompt", "type": "main", "index": 0 }]] },
+    "Build topic plan prompt": { "main": [[{ "node": "OpenAI topic plan", "type": "main", "index": 0 }]] },
+    "OpenAI topic plan": { "main": [[{ "node": "Parse topic plan", "type": "main", "index": 0 }]] },
+    "Parse topic plan": { "main": [[{ "node": "Save topics to Content Studio", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "meta": { "templateCredsSetupCompleted": false }
+}

@@ -17,10 +17,16 @@ export async function GET(request: Request) {
       { kind: { in: ["profile", "source"] }, status: "approved" },
       { kind: "topic", status: "ready" }, { kind: "article", status: { in: ["draft", "review", "published"] } },
     ] }, orderBy: { createdAt: "asc" } });
+    const existingTopics = await db.contentEntry.findMany({
+      where: { kind: "topic", status: { in: ["idea", "ready", "drafted"] } },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, title: true, status: true, data: true },
+    });
     return json({
       profile: entries.find((e) => e.kind === "profile") ?? null,
       sources: entries.filter((e) => e.kind === "source"),
       topics: entries.filter((e) => e.kind === "topic"),
+      existingTopics,
       existingArticles: entries.filter((e) => e.kind === "article").map(({ id, title, slug, status }) => ({ id, title, slug, status })),
     });
   } catch (error) { return apiError(error); }

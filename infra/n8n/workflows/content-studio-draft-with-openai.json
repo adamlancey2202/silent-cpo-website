@@ -1,0 +1,197 @@
+{
+  "name": "SilentCPO Content Studio — OpenAI draft",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 320]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "content-studio-draft",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook (scheduled)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 120],
+      "webhookId": "content-studio-draft"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "site-base",
+              "name": "siteBaseUrl",
+              "value": "https://silentcpo.me",
+              "type": "string"
+            },
+            {
+              "id": "model",
+              "name": "openAiModel",
+              "value": "gpt-4o-mini",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "config",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [260, 220]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.siteBaseUrl }}/api/automation/content",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "get-context",
+      "name": "GET content context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 220],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_SILENTCPO",
+          "name": "SilentCPO Content API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $input.first().json;\nconst config = $('Config').first().json;\n\nif (!ctx.profile?.id) {\n  throw new Error('CONTENT_STUDIO: No business profile returned. Create and approve the profile in admin → Content.');\n}\nif (ctx.profile.status !== 'approved') {\n  throw new Error(`CONTENT_STUDIO: Profile is not approved (status=${ctx.profile.status}).`);\n}\nif (!Array.isArray(ctx.topics) || ctx.topics.length === 0) {\n  throw new Error('CONTENT_STUDIO: No Ready topics. Set at least one topic to Ready in admin → Content.');\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    siteBaseUrl: config.siteBaseUrl,\n    openAiModel: config.openAiModel,\n  },\n}];"
+      },
+      "id": "validate-context",
+      "name": "Validate context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst today = new Date().toISOString().slice(0, 10);\n\nconst dueTopics = item.topics.filter((t) => {\n  const d = t.data?.plannedDate;\n  return !d || d <= today;\n});\nconst pool = dueTopics.length ? dueTopics : item.topics;\n\nconst sorted = [...pool].sort((a, b) => Number(a.data?.priority ?? 99) - Number(b.data?.priority ?? 99));\nconst topic = sorted[0];\nif (!topic?.id) throw new Error('CONTENT_STUDIO: Topic selection failed.');\n\nconst titleLower = topic.title.trim().toLowerCase();\nconst duplicate = (item.existingArticles ?? []).some((a) => a.title?.trim().toLowerCase() === titleLower);\nif (duplicate) {\n  throw new Error(`CONTENT_STUDIO: Topic title matches an existing article. Rename the topic or archive the article.`);\n}\n\nfunction slugify(raw) {\n  const base = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 120);\n  if (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(base)) return base;\n  return `topic-${topic.id}`.replace(/[^a-z0-9-]/g, '');\n}\n\nreturn [{\n  json: {\n    siteBaseUrl: item.siteBaseUrl,\n    openAiModel: item.openAiModel,\n    profile: item.profile,\n    sources: item.sources,\n    existingArticles: item.existingArticles,\n    topic,\n    requestKey: `topic-${topic.id}-draft-v1`,\n    suggestedSlug: slugify(topic.title),\n  },\n}];"
+      },
+      "id": "select-topic",
+      "name": "Select topic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst p = row.profile.data;\nconst topic = row.topic;\n\nconst sourceBlock = (row.sources ?? [])\n  .map((s) => `Source id=${s.id}\\nURL: ${s.data?.url || ''}\\n${s.data?.text || ''}`)\n  .join('\\n\\n---\\n\\n');\n\nconst titles = (row.existingArticles ?? []).map((a) => a.title).join('; ');\n\nconst system = [\n  'You write editorial drafts for SilentCPO. British English.',\n  'Obey profile instructions and exclusions.',\n  'Use ONLY facts from approved sources below; never invent statistics, prices, testimonials, or case outcomes.',\n  'Return a single JSON object. No markdown fences.',\n].join(' ');\n\nconst user = [\n  '## Profile',\n  `Audience: ${p.audience}`,\n  `Services: ${p.services}`,\n  `Positioning: ${p.positioning}`,\n  `Instructions: ${p.instructions}`,\n  `Exclusions: ${p.exclusions}`,\n  `Competitors (position against these; do not copy; no false claims): ${p.competitors || '(none listed)'}`,\n  '',\n  '## Approved sources (evidence only)',\n  sourceBlock || '(none provided)',\n  '',\n  '## Topic',\n  `Title: ${topic.title}`,\n  `Brief: ${topic.data?.brief || ''}`,\n  `Keyword: ${topic.data?.keyword || ''}`,\n  `Intent: ${topic.data?.intent || ''}`,\n  `Rationale: ${topic.data?.rationale || ''}`,\n  '',\n  '## Existing titles (avoid overlap)',\n  titles || '(none)',\n  '',\n  '## Required JSON keys',\n  'title, slug (lowercase a-z0-9 hyphenated), excerpt (<=400 chars), body (markdown with ## headings), metaTitle (<=100), metaDescription (<=200), keyword, sources (private fact-check notes), sourceIds (array of source ids used; empty if none).',\n].join('\\n');\n\nreturn [{\n  json: {\n    ...row,\n    openAiBody: {\n      model: row.openAiModel,\n      response_format: { type: 'json_object' },\n      temperature: 0.4,\n      messages: [\n        { role: 'system', content: system },\n        { role: 'user', content: user },\n      ],\n    },\n  },\n}];"
+      },
+      "id": "build-prompt",
+      "name": "Build OpenAI prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.openAiBody }}",
+        "options": {}
+      },
+      "id": "openai-chat",
+      "name": "OpenAI chat completion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1360, 220],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_OPENAI",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const api = $input.first().json;\nconst row = $('Build OpenAI prompt').first().json;\n\nconst content = api.choices?.[0]?.message?.content;\nif (!content) throw new Error('OpenAI: empty response');\n\nlet draft;\ntry {\n  draft = JSON.parse(content);\n} catch {\n  throw new Error('OpenAI: response was not valid JSON');\n}\n\nconst slugRe = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;\nif (!draft.title?.trim()) throw new Error('OpenAI: missing title');\nif (!draft.slug || !slugRe.test(draft.slug)) draft.slug = row.suggestedSlug;\n\nconst sourceIds = Array.isArray(draft.sourceIds) ? draft.sourceIds : [];\nconst approvedIds = new Set((row.sources ?? []).map((s) => s.id));\nfor (const id of sourceIds) {\n  if (!approvedIds.has(id)) throw new Error(`OpenAI: sourceId ${id} is not an approved source`);\n}\n\nconst delivery = {\n  requestKey: row.requestKey,\n  topicId: row.topic.id,\n  title: String(draft.title).trim().slice(0, 200),\n  slug: draft.slug,\n  data: {\n    excerpt: String(draft.excerpt ?? '').trim().slice(0, 400),\n    body: String(draft.body ?? '').trim().slice(0, 80000),\n    metaTitle: String(draft.metaTitle ?? draft.title).trim().slice(0, 100),\n    metaDescription: String(draft.metaDescription ?? '').trim().slice(0, 200),\n    keyword: String(draft.keyword ?? row.topic.data?.keyword ?? '').trim().slice(0, 500),\n    sources: String(draft.sources ?? '').trim().slice(0, 30000),\n    sourceIds,\n  },\n};\n\nreturn [{\n  json: {\n    siteBaseUrl: row.siteBaseUrl,\n    topicId: row.topic.id,\n    topicTitle: row.topic.title,\n    delivery,\n  },\n}];"
+      },
+      "id": "parse-and-deliver",
+      "name": "Parse model and build delivery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1580, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.siteBaseUrl }}/api/automation/content",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.delivery }}",
+        "options": {}
+      },
+      "id": "deliver-draft",
+      "name": "Deliver draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1800, 220],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_SILENTCPO",
+          "name": "SilentCPO Content API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Config", "type": "main", "index": 0 }]]
+    },
+    "Webhook (scheduled)": {
+      "main": [[{ "node": "Config", "type": "main", "index": 0 }]]
+    },
+    "Config": {
+      "main": [[{ "node": "GET content context", "type": "main", "index": 0 }]]
+    },
+    "GET content context": {
+      "main": [[{ "node": "Validate context", "type": "main", "index": 0 }]]
+    },
+    "Validate context": {
+      "main": [[{ "node": "Select topic", "type": "main", "index": 0 }]]
+    },
+    "Select topic": {
+      "main": [[{ "node": "Build OpenAI prompt", "type": "main", "index": 0 }]]
+    },
+    "Build OpenAI prompt": {
+      "main": [[{ "node": "OpenAI chat completion", "type": "main", "index": 0 }]]
+    },
+    "OpenAI chat completion": {
+      "main": [[{ "node": "Parse model and build delivery", "type": "main", "index": 0 }]]
+    },
+    "Parse model and build delivery": {
+      "main": [[{ "node": "Deliver draft", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

@@ -49,4 +49,21 @@ assert((await (await fetch(base+'/sitemap.xml')).text()).includes('/blog/'+prefi
 await req(api,admin,{...edit,version:article.version,status:'archived'});
 assert.equal((await fetch(base+'/blog/'+prefix)).status,404);
 assert(!(await (await fetch(base+'/sitemap.xml')).text()).includes('/blog/'+prefix));
-console.log('PASS: authentication, source approval, validation, duplicate delivery, topic locking, draft privacy, publish/archive, optimistic updates, stable URLs, safe rendering, sitemap.');
+const planKey = prefix + '-topic-plan';
+const plan = await req(bridge, automation, {
+  requestKey: planKey,
+  topics: [{
+    title: prefix + ' planned topic',
+    status: 'ready',
+    data: { keyword: prefix + '-kw', audience: 'Founders', intent: 'Guide', rationale: 'Test plan', brief: 'Brief', priority: 2, plannedDate: '', targetUrl: '' },
+  }],
+}, 201);
+assert(plan.created === 1);
+assert.equal(plan.topicIds.length, 1);
+const planReplay = await req(bridge, automation, { requestKey: planKey, topics: [{ title: prefix + ' planned topic', status: 'ready', data: { keyword: prefix + '-kw', audience: 'Founders', intent: 'Guide', rationale: 'Test plan', brief: 'Brief', priority: 2, plannedDate: '', targetUrl: '' } }] });
+assert.equal(planReplay.replayed, true);
+const dupPlan = await req(bridge, automation, { requestKey: planKey, topics: [{ title: prefix + ' other', status: 'ready', data: { keyword: prefix + '-kw', audience: 'Founders', intent: 'Guide', rationale: 'x', brief: 'x', priority: 3, plannedDate: '', targetUrl: '' } }] }, 409);
+assert(dupPlan.error);
+const context2 = await req(bridge, automation);
+assert(context2.existingTopics.some((t) => t.id === plan.topicIds[0]));
+console.log('PASS: authentication, source approval, validation, duplicate delivery, topic locking, draft privacy, publish/archive, optimistic updates, stable URLs, safe rendering, sitemap, topic plan.');

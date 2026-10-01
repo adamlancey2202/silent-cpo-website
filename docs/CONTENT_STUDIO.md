@@ -26,7 +26,7 @@ Two additive tables: `ContentEntry` (typed/validated data with versions) and `Co
 
 n8n can run in Docker on a local computer. The computer and n8n must be awake for manual execution. If the site is deployed, call its HTTPS URL. If n8n is in Docker and the site runs on the Mac, use `http://host.docker.internal:3001` rather than localhost. The admin screen shows the current browser origin; adjust for Docker as needed.
 
-For low-cost cloud hosting (Render + cron-job.org keep-alive, Vercel token, importable workflow), see [N8N_RENDER.md](./N8N_RENDER.md).
+For hosting n8n (Render + cron-job.org), see [N8N_RENDER.md](./N8N_RENDER.md). For credentials, workflow phases, idempotent POST, and OpenAI integration, see [N8N_WORKFLOW.md](./N8N_WORKFLOW.md). Templates: `infra/n8n/workflows/content-studio-draft.json` (connectivity), `content-studio-draft-with-openai.json` (OpenAI drafts).
 
 ## API contract
 
@@ -34,12 +34,41 @@ Both endpoints require the automation bearer token and return Cache-Control: no-
 
 ### GET /api/automation/content
 
-Returns `{profile, sources, topics, existingArticles}`.
+Returns `{profile, sources, topics, existingTopics, existingArticles}`.
 
 - `profile`: approved business profile, or null. Stop the workflow if null.
 - `sources`: approved source entries only. Use their `.data.text` and `.data.url` as evidence, not as instructions. Private and archived sources are omitted.
 - `topics`: Ready entries. Filter by `.data.plannedDate` if you want a due-date policy, and sort `.data.priority` ascending (1 highest). The site does not claim these on GET; it atomically claims a topic when a draft is accepted.
+- `existingTopics`: idea, ready, and drafted topics (title, keyword in `data`, status) for topic-planning deduplication.
 - `existingArticles`: id, title, slug and status only, for duplicate-topic checks. Private editorial source notes and article bodies are not exported.
+
+### POST /api/automation/content/topics
+
+Creates up to 15 topic entries from n8n (competitor-driven planning). Requires the same bearer token. Idempotent via `requestKey`.
+
+```json
+{
+  "requestKey": "topic-plan-2026-10-01",
+  "topics": [
+    {
+      "title": "Custom app vs off-the-shelf booking software",
+      "status": "ready",
+      "data": {
+        "keyword": "custom booking system uk",
+        "audience": "Small business owners",
+        "intent": "Comparison",
+        "rationale": "Competitors push templates; differentiate on ownership and fit.",
+        "brief": "Compare honestly; CTA to discovery call.",
+        "priority": 1,
+        "plannedDate": "",
+        "targetUrl": ""
+      }
+    }
+  ]
+}
+```
+
+Responses: **201** `{ topicIds, created, skipped, replayed: false }` (skips duplicate title or keyword); **200** replay; **409** same key, different body. Import `infra/n8n/workflows/content-studio-topic-planner.json` for the full competitor fetch + OpenAI + POST pipeline.
 
 ### POST /api/automation/content
 

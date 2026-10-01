@@ -53,6 +53,17 @@ export const draftInput = z.object({
   data: articleData,
 }).strict();
 
+export const topicData = schemas.topic;
+export const topicProposal = z.object({
+  title: z.string().trim().min(1).max(200),
+  status: z.enum(["idea", "ready"]).default("ready"),
+  data: topicData,
+});
+export const topicPlanInput = z.object({
+  requestKey: z.string().trim().min(8).max(150),
+  topics: z.array(topicProposal).min(1).max(15),
+}).strict();
+
 export type Entry = { id: string; kind: ContentKind; title: string; status: string; slug: string | null; data: Record<string, string | number | string[]>; version: number; createdAt: string; updatedAt: string; publishedAt: string | null };
 export const profileDefaults = {
   audience: "UK founders and small businesses needing websites, apps, booking systems, membership platforms or internal tools.",
