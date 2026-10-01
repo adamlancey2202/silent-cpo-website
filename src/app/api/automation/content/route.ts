@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
+import { planCompetitorFetches } from "@/lib/content/competitor-urls";
 import { draftInput } from "@/lib/content/schema";
 import { apiError, json, readBody } from "@/lib/content/http";
 
@@ -22,12 +23,18 @@ export async function GET(request: Request) {
       orderBy: { updatedAt: "desc" },
       select: { id: true, title: true, status: true, data: true },
     });
+    const profile = entries.find((e) => e.kind === "profile") ?? null;
+    const competitorNotes =
+      profile?.data && typeof profile.data === "object" && "competitors" in profile.data
+        ? String((profile.data as { competitors?: string }).competitors ?? "")
+        : "";
     return json({
-      profile: entries.find((e) => e.kind === "profile") ?? null,
+      profile,
       sources: entries.filter((e) => e.kind === "source"),
       topics: entries.filter((e) => e.kind === "topic"),
       existingTopics,
       existingArticles: entries.filter((e) => e.kind === "article").map(({ id, title, slug, status }) => ({ id, title, slug, status })),
+      competitorPlanning: profile?.status === "approved" ? planCompetitorFetches(competitorNotes) : null,
     });
   } catch (error) { return apiError(error); }
 }

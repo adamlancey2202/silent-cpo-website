@@ -19,7 +19,14 @@ const privateSource=await req(api,admin,{kind:'source',title:prefix+' private',s
 const source=await req(api,admin,{kind:'source',title:prefix+' source',status:'approved',data:sourceData});
 await req(api,admin,{kind:'source',title:'Bad URL',status:'private',data:{...sourceData,url:'javascript:alert(1)'}},400);
 const topic=await req(api,admin,{kind:'topic',title:prefix+' topic',status:'ready',data:{keyword:'planning an app',audience:'Founders',intent:'Guide',rationale:'Relevant to discovery work',brief:'Use the approved source',priority:1,plannedDate:'',targetUrl:''}});
+const profileData={audience:'Founders',services:'Apps',positioning:'Partner',instructions:'British English',exclusions:'None',competitors:'https://bookivo.co.uk/ rival note\nhttps://example-competitor.co.uk/agency',cta:'Contact',ctaUrl:''};
+let profileRow=(await req(api,admin)).entries.find((e)=>e.kind==='profile');
+if(!profileRow) profileRow=await req(api,admin,{kind:'profile',title:'SilentCPO',status:'approved',data:profileData});
+else profileRow=await req(api,admin,{id:profileRow.id,version:profileRow.version,kind:'profile',title:profileRow.title,status:'approved',data:{...profileRow.data,...profileData}});
 const context=await req(bridge,automation);
+assert(context.competitorPlanning.fetchUrls.some((u)=>u.includes('example-competitor.co.uk')));
+assert(!context.competitorPlanning.fetchUrls.some((u)=>u.includes('bookivo.co.uk')));
+assert(context.competitorPlanning.skipped.some((s)=>s.url.includes('bookivo.co.uk')));
 assert(context.sources.some(s=>s.id===source.id));
 assert(!context.sources.some(s=>s.id===privateSource.id));
 assert(context.topics.some(t=>t.id===topic.id));
