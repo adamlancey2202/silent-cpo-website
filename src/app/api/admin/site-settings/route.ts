@@ -24,24 +24,30 @@ export async function PUT(request: Request) {
       const existing = await tx.siteSettings.findUnique({ where: { id: "default" } });
       if (!existing) {
         return tx.siteSettings.create({
-          data: { id: "default", ga4MeasurementId: v.ga4MeasurementId, version: 1 },
+          data: {
+            id: "default",
+            ga4MeasurementId: v.ga4MeasurementId,
+            ga4PropertyId: v.ga4PropertyId,
+            gscSiteUrl: v.gscSiteUrl,
+            version: 1,
+          },
         });
       }
       if (existing.version !== v.version) return null;
       const updated = await tx.siteSettings.updateMany({
         where: { id: "default", version: v.version },
-        data: { ga4MeasurementId: v.ga4MeasurementId, version: { increment: 1 } },
+        data: {
+          ga4MeasurementId: v.ga4MeasurementId,
+          ga4PropertyId: v.ga4PropertyId,
+          gscSiteUrl: v.gscSiteUrl,
+          version: { increment: 1 },
+        },
       });
       if (!updated.count) return null;
       return tx.siteSettings.findUnique({ where: { id: "default" } });
     });
     if (!saved) return json({ error: "Settings changed elsewhere. Reload before saving." }, 409);
-    return json({
-      ga4MeasurementId: saved.ga4MeasurementId,
-      version: saved.version,
-      updatedAt: saved.updatedAt.toISOString(),
-      source: "database" as const,
-    });
+    return json(await getSiteSettings());
   } catch (error) {
     return apiError(error);
   }

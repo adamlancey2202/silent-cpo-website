@@ -1,0 +1,2 @@
+ALTER TABLE "SiteSettings" ADD COLUMN "ga4PropertyId" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "SiteSettings" ADD COLUMN "gscSiteUrl" TEXT NOT NULL DEFAULT '';

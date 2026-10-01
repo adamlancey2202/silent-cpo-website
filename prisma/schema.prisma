@@ -87,6 +87,8 @@ model ContentTopicPlanRun {
 model SiteSettings {
   id               String   @id @default("default")
   ga4MeasurementId String   @default("")
+  ga4PropertyId    String   @default("")
+  gscSiteUrl       String   @default("")
   version          Int      @default(1)
   updatedAt        DateTime @updatedAt
 }

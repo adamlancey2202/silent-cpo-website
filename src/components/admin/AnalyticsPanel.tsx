@@ -1,13 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BarChart3, ExternalLink } from "lucide-react";
+import { BarChart3 } from "lucide-react";
+import { AnalyticsSnapshotPanel } from "@/components/admin/AnalyticsSnapshotPanel";
 
 type Settings = {
   ga4MeasurementId: string;
+  ga4PropertyId: string;
+  gscSiteUrl: string;
   version: number;
   updatedAt: string | null;
   source: "database" | "environment" | "none";
+  reportingConfigured: boolean;
 };
 
 type Props = {
@@ -22,6 +26,8 @@ const button =
 export function AnalyticsPanel({ apiFetch }: Props) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [ga4, setGa4] = useState("");
+  const [propertyId, setPropertyId] = useState("");
+  const [gscSiteUrl, setGscSiteUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -36,6 +42,8 @@ export function AnalyticsPanel({ apiFetch }: Props) {
       if (!res.ok) throw new Error(data.error || "Could not load settings");
       setSettings(data);
       setGa4(data.ga4MeasurementId);
+      setPropertyId(data.ga4PropertyId);
+      setGscSiteUrl(data.gscSiteUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load settings");
     } finally {
@@ -56,13 +64,20 @@ export function AnalyticsPanel({ apiFetch }: Props) {
     try {
       const res = await apiFetch("/api/admin/site-settings", {
         method: "PUT",
-        body: JSON.stringify({ version: settings.version, ga4MeasurementId: ga4.trim() }),
+        body: JSON.stringify({
+          version: settings.version,
+          ga4MeasurementId: ga4.trim(),
+          ga4PropertyId: propertyId.trim(),
+          gscSiteUrl: gscSiteUrl.trim(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
       setSettings(data);
       setGa4(data.ga4MeasurementId);
-      setNotice(data.ga4MeasurementId ? "Analytics saved. Tracking is active on the public site." : "Analytics cleared.");
+      setPropertyId(data.ga4PropertyId);
+      setGscSiteUrl(data.gscSiteUrl);
+      setNotice("Analytics settings saved.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -70,8 +85,7 @@ export function AnalyticsPanel({ apiFetch }: Props) {
     }
   }
 
-  const active = Boolean(ga4.trim());
-  const envFallback = settings?.source === "environment";
+  const trackingActive = Boolean(ga4.trim());
 
   return (
     <div className="space-y-6">
@@ -81,9 +95,11 @@ export function AnalyticsPanel({ apiFetch }: Props) {
           ANALYTICS
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-mist/60">
-          Connect Google Analytics 4 to see which pages and blog posts get traffic. Measurement IDs are public (they appear in the browser); saving here updates production after the next page load.
+          Measurement ID powers tracking on the site. Property ID and Search Console URL power the performance panel (with a Google service account on the server).
         </p>
       </div>
+
+      <AnalyticsSnapshotPanel apiFetch={apiFetch} />
 
       {error && <p className="text-sm text-red-400">{error}</p>}
       {notice && <p className="text-sm text-green">{notice}</p>}
@@ -99,48 +115,51 @@ export function AnalyticsPanel({ apiFetch }: Props) {
               placeholder="G-XXXXXXXXXX"
               value={ga4}
               onChange={(e) => setGa4(e.target.value)}
-              pattern="G-[A-Za-z0-9]*"
               autoComplete="off"
             />
-            <span className="block text-xs text-mist/50">
-              From Google Analytics → Admin → Data streams → your web stream. Leave blank to disable.
-            </span>
+            <span className="block text-xs text-mist/50">Data stream → Measurement ID (tracking tag).</span>
           </label>
 
-          {envFallback && !settings?.ga4MeasurementId && (
-            <p className="text-xs text-gold">
-              A measurement ID is currently loaded from the server environment variable{" "}
-              <span className="font-mono">GA4_MEASUREMENT_ID</span>. Save here to store it in the database instead.
-            </p>
-          )}
+          <label className="block space-y-2 text-sm">
+            <span>GA4 property ID (numeric)</span>
+            <input
+              className={input}
+              placeholder="123456789"
+              value={propertyId}
+              onChange={(e) => setPropertyId(e.target.value)}
+              inputMode="numeric"
+              autoComplete="off"
+            />
+            <span className="block text-xs text-mist/50">Admin → Property settings → Property ID (numbers only).</span>
+          </label>
+
+          <label className="block space-y-2 text-sm">
+            <span>Search Console site URL</span>
+            <input
+              className={input}
+              placeholder="https://www.silentcpo.me/"
+              value={gscSiteUrl}
+              onChange={(e) => setGscSiteUrl(e.target.value)}
+              autoComplete="off"
+            />
+            <span className="block text-xs text-mist/50">Exact URL as in Search Console (for clicks &amp; impressions).</span>
+          </label>
+
+          <p className="text-xs text-mist/50">
+            Server env <span className="font-mono">GOOGLE_SERVICE_ACCOUNT_JSON</span> (full JSON key) unlocks the performance panel. Add the service account email as Viewer in GA4 and as a user in Search Console.
+          </p>
 
           <div className="flex flex-wrap items-center gap-3">
             <button type="submit" disabled={saving} className={`${button} bg-gold text-deep`}>
               {saving ? "Saving…" : "Save analytics"}
             </button>
             <span className="text-xs text-mist/50">
-              Status: {active ? "tracking enabled" : "not configured"}
+              Tracking: {trackingActive ? "on" : "off"} · Reporting API:{" "}
+              {settings?.reportingConfigured ? "configured" : "not configured"}
             </span>
           </div>
         </form>
       )}
-
-      <div className="rounded-xl border border-mist/10 bg-midnight/20 p-6 text-sm text-mist/70">
-        <h3 className="text-bone">Which posts worked?</h3>
-        <p className="mt-2">
-          In GA4, open <strong className="font-normal text-mist">Reports → Engagement → Pages and screens</strong>. Filter or sort by{" "}
-          <span className="font-mono text-xs">/blog/</span> paths to compare articles. Allow 24–48 hours after publishing for meaningful data.
-        </p>
-        <a
-          href="https://analytics.google.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 inline-flex items-center gap-1 text-gold hover:underline"
-        >
-          Open Google Analytics
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      </div>
     </div>
   );
 }
