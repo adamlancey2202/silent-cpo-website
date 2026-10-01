@@ -26,6 +26,8 @@ Two additive tables: `ContentEntry` (typed/validated data with versions) and `Co
 
 n8n can run in Docker on a local computer. The computer and n8n must be awake for manual execution. If the site is deployed, call its HTTPS URL. If n8n is in Docker and the site runs on the Mac, use `http://host.docker.internal:3001` rather than localhost. The admin screen shows the current browser origin; adjust for Docker as needed.
 
+For low-cost cloud hosting (Render + cron-job.org keep-alive, Vercel token, importable workflow), see [N8N_RENDER.md](./N8N_RENDER.md).
+
 ## API contract
 
 Both endpoints require the automation bearer token and return Cache-Control: no-store. This credential has no access to admin, Stripe or enquiry endpoints.

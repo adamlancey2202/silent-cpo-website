@@ -1,0 +1,228 @@
+{
+  "name": "SilentCPO Content Studio (stub)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "content-studio-draft",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook (for cron-job.org)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 120],
+      "webhookId": "content-studio-draft"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "site-base",
+              "name": "siteBaseUrl",
+              "value": "https://silentcpo.me",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-site-url",
+      "name": "Set site base URL",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [280, 220]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.siteBaseUrl }}/api/automation/content",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "get-context",
+      "name": "GET content context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 220],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "SilentCPO Content API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-profile",
+              "leftValue": "={{ $json.profile }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-profile",
+      "name": "Approved profile?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [760, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-topics",
+              "leftValue": "={{ $json.topics.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-topics",
+      "name": "Any ready topics?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1000, 120]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $input.first().json;\nconst siteBaseUrl = $('Set site base URL').first().json.siteBaseUrl;\nconst topics = [...(ctx.topics || [])].sort((a, b) => {\n  const pa = a.data?.priority ?? 99;\n  const pb = b.data?.priority ?? 99;\n  return pa - pb;\n});\nconst topic = topics[0];\nif (!topic) {\n  return [{ json: { skipped: true, reason: 'no ready topics' } }];\n}\nreturn [{\n  json: {\n    siteBaseUrl,\n    topicId: topic.id,\n    topicTitle: topic.title,\n    profile: ctx.profile,\n    sources: ctx.sources,\n    existingArticles: ctx.existingArticles,\n    requestKey: `topic-${topic.id}-draft-v1`,\n    placeholderTitle: `Draft for ${topic.title}`,\n    placeholderSlug: topic.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)\n  }\n}];"
+      },
+      "id": "pick-topic",
+      "name": "Pick highest-priority topic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 40]
+    },
+    {
+      "parameters": {
+        "content": "## Replace this branch with OpenAI\n\nUse profile voice, exclusions, and approved source `.data.text` only.\n\nThen POST the real title, slug, and body.\n\nThe node below sends a **placeholder** draft so you can test connectivity — delete or disable it before production.",
+        "height": 220,
+        "width": 420
+      },
+      "id": "note-openai",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1180, -200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.siteBaseUrl }}/api/automation/content",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"requestKey\": \"{{ $json.requestKey }}\",\n  \"topicId\": \"{{ $json.topicId }}\",\n  \"title\": \"{{ $json.placeholderTitle }}\",\n  \"slug\": \"{{ $json.placeholderSlug }}\",\n  \"data\": {\n    \"excerpt\": \"Placeholder from n8n connectivity test — replace with model output.\",\n    \"body\": \"## Replace me\\n\\nThis draft was created by the stub workflow.\",\n    \"metaTitle\": \"{{ $json.placeholderTitle }}\",\n    \"metaDescription\": \"Connectivity test.\",\n    \"keyword\": \"\",\n    \"sources\": \"Stub workflow — no model run.\",\n    \"sourceIds\": []\n  }\n}",
+        "options": {}
+      },
+      "id": "post-placeholder",
+      "name": "POST placeholder draft (test only)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1480, 40],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "SilentCPO Content API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "errorMessage": "No approved business profile in Content Studio. Approve profile in admin first."
+      },
+      "id": "stop-no-profile",
+      "name": "Stop — no profile",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [1000, 340]
+    },
+    {
+      "parameters": {
+        "errorMessage": "No topics in Ready status."
+      },
+      "id": "stop-no-topics",
+      "name": "Stop — no topics",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [1240, 200]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Set site base URL", "type": "main", "index": 0 }]]
+    },
+    "Webhook (for cron-job.org)": {
+      "main": [[{ "node": "Set site base URL", "type": "main", "index": 0 }]]
+    },
+    "Set site base URL": {
+      "main": [[{ "node": "GET content context", "type": "main", "index": 0 }]]
+    },
+    "GET content context": {
+      "main": [[{ "node": "Approved profile?", "type": "main", "index": 0 }]]
+    },
+    "Approved profile?": {
+      "main": [
+        [{ "node": "Any ready topics?", "type": "main", "index": 0 }],
+        [{ "node": "Stop — no profile", "type": "main", "index": 0 }]
+      ]
+    },
+    "Any ready topics?": {
+      "main": [
+        [{ "node": "Pick highest-priority topic", "type": "main", "index": 0 }],
+        [{ "node": "Stop — no topics", "type": "main", "index": 0 }]
+      ]
+    },
+    "Pick highest-priority topic": {
+      "main": [[{ "node": "POST placeholder draft (test only)", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

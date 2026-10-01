@@ -1,0 +1,56 @@
+# Deploy from Render Dashboard → New → Blueprint → connect this repo
+# and set the root directory to infra/n8n (or copy this file to a small n8n-only repo).
+#
+# Free tier: web service sleeps after ~15 min idle; pair with cron-job.org (see docs/N8N_RENDER.md).
+# Free Postgres expires after 30 days — upgrade n8n-db before then or export workflows.
+
+services:
+  - type: web
+    plan: free
+    runtime: image
+    name: silentcpo-n8n
+    image:
+      # Pin 1.x — `latest` (2.x) often OOMs on Render free (~512 MB RAM).
+      url: docker.io/n8nio/n8n:1.76.4
+    envVars:
+      - key: PORT
+        value: "5678"
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=384
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_CONNECTION_TIMEOUT
+        value: "120000"
+      - key: DB_POSTGRESDB_POOL_SIZE
+        value: "1"
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: silentcpo-n8n-db
+          property: port
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: silentcpo-n8n-db
+          property: database
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: silentcpo-n8n-db
+          property: host
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: silentcpo-n8n-db
+          property: password
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: silentcpo-n8n-db
+          property: user
+      # Set after first deploy (Dashboard → Environment), then redeploy:
+      # - WEBHOOK_URL = https://YOUR-SERVICE.onrender.com/
+      # - N8N_HOST = YOUR-SERVICE.onrender.com
+      # - N8N_PROTOCOL = https
+      # - N8N_PROXY_HOPS = 1
+
+databases:
+  - name: silentcpo-n8n-db
+    plan: free
