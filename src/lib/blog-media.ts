@@ -3,7 +3,10 @@ import { siteConfig } from "@/lib/site";
 const OG_WIDTH = 1200;
 const OG_HEIGHT = 630;
 
-/** Public HTTPS URL for the shared blog / social preview image. */
+/** Drop your file at `public/images/blog-og-default.webp` (or .png). */
+export const BLOG_OG_PUBLIC_PATH = "/images/blog-og-default.webp";
+
+/** Absolute URL for metadata; path for same-origin assets. */
 export function blogOgImageUrl(): string {
   const custom = process.env.BLOG_OG_IMAGE_URL?.trim();
   if (custom) {
@@ -14,7 +17,13 @@ export function blogOgImageUrl(): string {
       /* use fallback */
     }
   }
-  return `${siteConfig.url}/images/brand-card.png`;
+  return `${siteConfig.url}${BLOG_OG_PUBLIC_PATH}`;
+}
+
+/** Path under `public/` for next/image (same-origin). */
+export function blogOgImagePath(): string {
+  if (process.env.BLOG_OG_IMAGE_URL?.trim()) return blogOgImageUrl();
+  return BLOG_OG_PUBLIC_PATH;
 }
 
 export function blogOgImageMeta() {

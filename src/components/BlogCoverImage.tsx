@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { blogOgImageMeta, blogOgImageUrl } from "@/lib/blog-media";
+import { blogOgImageMeta, blogOgImagePath } from "@/lib/blog-media";
 
 type Props = {
   className?: string;
@@ -8,7 +8,7 @@ type Props = {
 
 /** Shared branded cover (R2 or site fallback). */
 export function BlogCoverImage({ className = "", priority = false }: Props) {
-  const src = blogOgImageUrl();
+  const src = blogOgImagePath();
   const { alt } = blogOgImageMeta();
 
   return (

@@ -31,9 +31,10 @@ Aspect ratio 1.91:1 (1200×630). Photorealistic or refined digital art — which
 ## After generation
 
 1. Download the image and optionally compress with [Squoosh](https://squoosh.app/) (WebP ~80–85 quality).
-2. Upload to Cloudflare R2 (see [R2_STORAGE.md](./R2_STORAGE.md)).
-3. Set **`BLOG_OG_IMAGE_URL`** on Vercel to the public HTTPS URL of that object.
-4. Redeploy the site. Blog pages and link previews will use the R2 image.
+2. Save it in this repo as **`public/images/blog-og-default.webp`** (see `public/images/README-blog-og.txt`).
+3. Commit and deploy — blog pages and social previews use that file automatically.
+
+**Optional later:** upload the same file to Cloudflare R2 and set **`BLOG_OG_IMAGE_URL`** on Vercel (see [R2_STORAGE.md](./R2_STORAGE.md)) instead of serving from `public/`.
 
 ## Tweaking
 
