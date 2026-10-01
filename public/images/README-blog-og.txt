@@ -3,7 +3,7 @@ Global blog & social preview image
 
 Add your generated artwork here as:
 
-  blog-og-default.webp
+  blog-image.png
 
 Recommended size: 1200 × 630 px (Open Graph / LinkedIn / X).
 

@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: [
       {
-        url: "/images/blog-og-default.webp",
+        url: "/images/blog-image.png",
         width: 1024,
         height: 576,
         alt: "SilentCPO — Digital Product Studio",
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.seoTitle,
     description: siteConfig.description,
-    images: ["/images/blog-og-default.webp"],
+    images: ["/images/blog-image.png"],
   },
   robots: {
     index: !isPreviewDeployment,

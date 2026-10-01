@@ -3,8 +3,8 @@ import { siteConfig } from "@/lib/site";
 const OG_WIDTH = 1200;
 const OG_HEIGHT = 630;
 
-/** Drop your file at `public/images/blog-og-default.webp` (or .png). */
-export const BLOG_OG_PUBLIC_PATH = "/images/blog-og-default.webp";
+/** Global blog hero + social preview (`public/images/blog-image.png`). */
+export const BLOG_OG_PUBLIC_PATH = "/images/blog-image.png";
 
 /** Absolute URL for metadata; path for same-origin assets. */
 export function blogOgImageUrl(): string {
