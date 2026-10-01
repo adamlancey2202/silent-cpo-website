@@ -7,6 +7,8 @@ import { Footer } from "@/components/Footer";
 import { ArticleBody } from "@/components/ArticleBody";
 import { publishedArticle } from "@/lib/content/public";
 import { BlogCoverImage } from "@/components/BlogCoverImage";
+import { BlogContactSection } from "@/components/BlogContactSection";
+import { BlogInlineCta } from "@/components/BlogInlineCta";
 import { blogOgImageMeta } from "@/lib/blog-media";
 import { siteConfig } from "@/lib/site";
 
@@ -68,18 +70,22 @@ export default async function ArticlePage({ params }: Props) {
           <h1 className="mt-4 break-words font-[family-name:var(--font-display)] text-5xl leading-tight text-bone md:text-6xl">
             {article.title}
           </h1>
-          <p className="mb-10 mt-6 text-lg leading-relaxed text-mist/75">{article.data.excerpt}</p>
-          <ArticleBody body={article.data.body} />
+          <p className="mt-6 text-lg leading-relaxed text-mist/75">{article.data.excerpt}</p>
+          <BlogInlineCta
+            title="Relating this to your own project?"
+            description="You can keep reading for context, or tell me what you’re trying to achieve — I’ll help you work out the next step."
+            linkLabel="Skip to the contact form"
+          />
+          <div className="mb-10 mt-8">
+            <ArticleBody body={article.data.body} />
+          </div>
+          <BlogInlineCta
+            title="Ready to talk it through?"
+            description="If this article raised questions about scope, budget or the right approach, send a short note and I’ll reply within 24 hours."
+            linkLabel="Send a message"
+          />
         </article>
-        <aside className="mt-12 rounded-xl border border-gold/25 p-6">
-          <h2 className="text-xl text-bone">Have a project in mind?</h2>
-          <p className="mt-3 text-mist/75">
-            You don’t need a finished specification. Tell me what you want to achieve and we’ll work out the next step.
-          </p>
-          <Link href="/#contact" className="mt-5 inline-block text-gold underline">
-            Start a conversation
-          </Link>
-        </aside>
+        <BlogContactSection className="mt-4" compact />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }}

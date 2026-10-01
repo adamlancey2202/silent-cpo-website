@@ -5,7 +5,9 @@ import { Footer } from "@/components/Footer";
 import { publishedArticles } from "@/lib/content/public";
 import { blogOgImageMeta } from "@/lib/blog-media";
 import { siteConfig } from "@/lib/site";
+import { BlogContactSection } from "@/components/BlogContactSection";
 import { BlogCoverImage } from "@/components/BlogCoverImage";
+import { BlogInlineCta } from "@/components/BlogInlineCta";
 
 export const dynamic = "force-dynamic";
 const og = blogOgImageMeta();
@@ -34,6 +36,12 @@ export default async function BlogPage() {
         <p className="mt-6 max-w-2xl text-mist/75">
           Practical notes on working out what your business needs and turning it into a digital product.
         </p>
+        <BlogInlineCta
+          className="mt-8 max-w-2xl"
+          title="Want help applying this to your business?"
+          description="Browse the articles below, or skip straight to a conversation — no obligation."
+          linkLabel="Use the contact form"
+        />
         <div className="mt-12 grid gap-6 md:grid-cols-2">
           {articles.map((article) => (
             <article key={article.id} className="rounded-2xl border border-mist/15 p-6">
@@ -61,6 +69,7 @@ export default async function BlogPage() {
             .
           </p>
         )}
+        <BlogContactSection className="mt-20" />
       </main>
       <Footer />
     </>
