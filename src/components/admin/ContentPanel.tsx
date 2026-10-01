@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ArticleBody } from "@/components/ArticleBody";
 import { ContentKind, Entry, kinds, statuses } from "@/lib/content/schema";
 import { defaultData, fields, labels } from "@/lib/content/fields";
+import { ContentStudioGuide } from "@/components/admin/ContentStudioGuide";
 
 type Run = { id: string; requestKey: string; articleId: string; message: string; createdAt: string };
 type Editor = { id?: string; version?: number; kind: ContentKind; title: string; status: string; slug?: string; data: Entry["data"] };
@@ -83,14 +84,28 @@ export function ContentPanel({ apiFetch }: { apiFetch: Fetch }) {
     finally { setTriggeringDraft(false); }
   }
   const readyTopics = entries.filter((e) => e.kind === "topic" && e.status === "ready").length;
+  const draftsToReview = entries.filter((e) => e.kind === "article" && ["draft", "review"].includes(e.status)).length;
+  const publishedCount = entries.filter((e) => e.kind === "article" && e.status === "published").length;
   const visible = entries.filter((e) => e.kind === section && (!statusFilter || e.status === statusFilter) && e.title.toLowerCase().includes(search.toLowerCase()));
   const profile = entries.find((e) => e.kind === "profile");
+  const profileApproved = profile?.status === "approved";
   return <section className="space-y-6" aria-label="Content studio">
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div><p className="text-xs tracking-widest text-gold">CONTENT STUDIO</p><h2 className="mt-2 text-3xl font-medium">Ideas into useful articles.</h2><p className="mt-2 max-w-2xl text-sm text-mist/70">Prepare your facts, plan topics, and review drafts from your morning n8n run. Nothing publishes until you choose Published and save.</p></div>
       <button className={button} onClick={() => { setLoading(true); void load(); }} disabled={loading || saving}>Refresh content</button>
     </div>
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{[["Ready topics", entries.filter((e) => e.kind === "topic" && e.status === "ready").length], ["Drafts to review", entries.filter((e) => e.kind === "article" && ["draft", "review"].includes(e.status)).length], ["Published", entries.filter((e) => e.kind === "article" && e.status === "published").length], ["Approved sources", entries.filter((e) => e.kind === "source" && e.status === "approved").length]].map(([label, count]) => <div key={label} className="rounded-xl border border-mist/15 p-4"><p className="text-xs text-mist/70">{label}</p><p className="mt-2 text-2xl text-gold">{count}</p></div>)}</div>
+    {!loading && (
+      <ContentStudioGuide
+        profileApproved={profileApproved}
+        readyTopics={readyTopics}
+        draftsToReview={draftsToReview}
+        published={publishedCount}
+        automationReady={configured}
+        draftWebhookReady={draftWebhookConfigured}
+        onGoTo={(next) => navigate(next)}
+      />
+    )}
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{[["Ready topics", readyTopics], ["Drafts to review", draftsToReview], ["Published", publishedCount], ["Approved sources", entries.filter((e) => e.kind === "source" && e.status === "approved").length]].map(([label, count]) => <div key={label} className="rounded-xl border border-mist/15 p-4"><p className="text-xs text-mist/70">{label}</p><p className="mt-2 text-2xl text-gold">{count}</p></div>)}</div>
     <nav aria-label="Content sections" className="flex flex-wrap gap-2">{[...kinds, "automation" as const].map((kind) => <button key={kind} disabled={saving} onClick={() => navigate(kind)} aria-pressed={section === kind} className={`${button} ${section === kind ? "bg-gold text-deep" : ""}`}>{kind === "automation" ? "n8n & history" : labels[kind]}</button>)}</nav>
     {error && <p role="alert" className="rounded-lg border border-red-400/40 p-4 text-sm text-red-300">{error}</p>}
     {notice && <p role="status" className="text-sm text-green">{notice}</p>}

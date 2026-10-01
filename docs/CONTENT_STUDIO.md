@@ -2,7 +2,7 @@
 
 ## What is implemented
 
-Open `/admin`, sign in with the existing admin secret, and choose **Content**.
+Open `/admin`, sign in with the existing admin secret, and choose **Content**. A dismissible **workflow guide** at the top walks through profile → topics → draft → publish (hide it with *Hide guide*; restore with *Show workflow guide*).
 
 - Business profile: audience, services, positioning, competitors, writing rules, exclusions and CTA. A reviewed starting profile is offered in the editor; nothing is seeded into your live database.
 - Source library: paste selected document text/Markdown and an optional source URL. Private by default; explicitly approve before sharing with automation. Files are not uploaded or scraped.
