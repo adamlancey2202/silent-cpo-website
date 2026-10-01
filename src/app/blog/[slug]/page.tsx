@@ -72,6 +72,7 @@ export default async function ArticlePage({ params }: Props) {
           </h1>
           <p className="mt-6 text-lg leading-relaxed text-mist/75">{article.data.excerpt}</p>
           <BlogInlineCta
+            className="!mt-14"
             title="Relating this to your own project?"
             description="You can keep reading for context, or tell me what you’re trying to achieve — I’ll help you work out the next step."
             linkLabel="Skip to the contact form"

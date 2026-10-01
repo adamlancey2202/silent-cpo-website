@@ -37,7 +37,7 @@ export default async function BlogPage() {
           Practical notes on working out what your business needs and turning it into a digital product.
         </p>
         <BlogInlineCta
-          className="mt-8 max-w-2xl"
+          className="mt-16 max-w-2xl"
           title="Want help applying this to your business?"
           description="Browse the articles below, or skip straight to a conversation — no obligation."
           linkLabel="Use the contact form"
