@@ -97,7 +97,7 @@ export function AnalyticsSnapshotPanel({ apiFetch, compact = false }: Props) {
           <p className="text-xs tracking-widest text-gold">PERFORMANCE</p>
           <h3 className="mt-1 text-lg font-medium text-bone">Blog traffic &amp; search (last 28 days)</h3>
           <p className="mt-2 max-w-2xl text-sm text-mist/70">
-            Like AutoSEO: page views from GA4 and clicks / impressions from Google Search Console when connected.
+            Page views and sessions from Google Analytics, plus search clicks and impressions from Search Console when reporting is connected on the server.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

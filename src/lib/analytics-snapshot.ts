@@ -58,7 +58,8 @@ export async function fetchAnalyticsSnapshot(rangeDays = 28): Promise<AnalyticsS
   if (!credentials) {
     return {
       ...empty,
-      notice: "Add GOOGLE_SERVICE_ACCOUNT_JSON on the server to load clicks and impressions here.",
+      notice:
+        "To load numbers here, add a Google service account key on Vercel (see Analytics settings below). Your measurement ID only tracks visits on the public site.",
     };
   }
 

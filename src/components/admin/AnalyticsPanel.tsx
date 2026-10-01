@@ -145,8 +145,10 @@ export function AnalyticsPanel({ apiFetch }: Props) {
             <span className="block text-xs text-mist/50">Exact URL as in Search Console (for clicks &amp; impressions).</span>
           </label>
 
-          <p className="text-xs text-mist/50">
-            Server env <span className="font-mono">GOOGLE_SERVICE_ACCOUNT_JSON</span> (full JSON key) unlocks the performance panel. Add the service account email as Viewer in GA4 and as a user in Search Console.
+          <p className="text-xs leading-relaxed text-mist/50">
+            The performance panel needs a one-time Google <strong className="font-normal text-mist/70">service account</strong> on Vercel: create it in Google Cloud, download the JSON key, paste it into the env var{" "}
+            <span className="font-mono">GOOGLE_SERVICE_ACCOUNT_JSON</span>, then add that account&apos;s email as Viewer in GA4 and as a user in Search Console. Details in{" "}
+            <span className="text-mist/70">docs/ANALYTICS.md</span> in the repo.
           </p>
 
           <div className="flex flex-wrap items-center gap-3">
