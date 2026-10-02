@@ -1,0 +1,118 @@
+{
+  "name": "SilentCPO \u2014 bid draft",
+  "nodes": [
+    {
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        220
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bid-draft",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "build",
+      "name": "Build bid prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        220
+      ],
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst title = String(body.title || '').trim();\nconst excerpt = String(body.excerpt || '').trim();\nif (!title) throw new Error('BID_DRAFT: listing title missing');\n\nconst portfolio = [\n  'Bookivo (https://bookivo.co.uk) - booking platform: branded booking sites, staff calendars, deposits and payments, reminders, client management.',\n  'The Goddery - custom Shopify theme for a supplement store: bespoke design, product pages, cart drawer, app-style mobile navigation.',\n  'Aevum Healthcare - product catalogue with member checkout and an installable member web app.',\n  'Kratos Dominion - private membership platform with member sign-in and referral-led access.',\n  'Witness Wise (https://witnesswise.co.uk) - professional services website with clear enquiry routes.',\n  'Vialo - responsive tracking web app: inventory counts, reorder alerts, AI assistant.',\n  'SilentCPO Content Studio - n8n + OpenAI automation with an admin dashboard and analytics reporting.',\n].join('\\n');\n\nconst listing = [\n  'Title: ' + title,\n  'Source: ' + String(body.source || ''),\n  body.budget ? 'Budget stated by client: ' + String(body.budget) : 'Budget: not stated',\n  excerpt,\n].join('\\n');\n\nconst user = \"Return JSON: { \\\"quote\\\": \\\"\\\\u00a3X-\\\\u00a3Y, covering ...\\\", \\\"timeline\\\": \\\"N working days. First milestone: ...\\\", \\\"reply\\\": \\\"...\\\" }.\\nreply is 120-180 words of plain text with line breaks, in this order:\\n1. One opening line restating what they want and saying plainly that you can build it.\\n2. A concrete plan of 3-4 lines: what you build first, what follows, and the stack only where it matters to them.\\n3. One sentence naming the thing that usually derails this type of project and how the first milestone handles it. State it as something you take care of.\\n4. The quote and the timeline, in one line.\\n5. One line naming a relevant portfolio project, with its URL if one is listed. Skip if nothing fits.\\n6. One or two practical questions that help confirm the quote, such as existing assets, integrations or a deadline.\\n7. A close offering to start on the first milestone.\\nBanned: \\\"I noticed\\\", \\\"Have you considered\\\", \\\"I hope you are doing well\\\", \\\"Let's connect to explore\\\", \\\"perfect fit\\\", unsolicited \\\"discovery phase\\\" pitches, and mentioning being new.\\n\\n## SilentCPO portfolio (cite only these)\\n__PORTFOLIO__\\n\\n## Listing\\n__LISTING__\".replace('__PORTFOLIO__', portfolio).replace('__LISTING__', listing);\n\nreturn [{\n  json: {\n    openAiBody: {\n      model: 'gpt-4o-mini',\n      response_format: { type: 'json_object' },\n      temperature: 0.4,\n      messages: [\n        { role: 'system', content: \"You draft one Freelancer bid for SilentCPO, a UK product studio run by a Chief Product Officer who also builds. SilentCPO designs and builds websites, Shopify themes, booking systems, web apps, PWAs, mobile apps, membership platforms, bespoke software and AI/n8n automation. The bid is written by a person who will build the project himself with an AI coding assistant, so delivery is fast. Reflect that speed in the timeline and the price. Price in GBP for the work described, as a single figure or a tight range, and say what it covers. Keep it competitive for a fast solo build: a simple site is a few hundred pounds, a web app with payments and accounts is low thousands, and only genuinely large builds go higher. Never invent a client budget. Timeline is working days. State the total and what the first milestone delivers. The CPO edge shows as foresight, not questions: name the one thing that usually derails this kind of project and say it is handled in the first milestone. Only cite portfolio work from the list given, and only when it is genuinely relevant. Never invent ratings, reviews, clients, results or years of experience. British English. Return JSON only.\" },\n        { role: 'user', content: user },\n      ],\n    },\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI draft bid",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.openAiBody }}",
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_OPENAI",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "id": "parse",
+      "name": "Parse bid",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        220
+      ],
+      "parameters": {
+        "jsCode": "const api = $input.first().json;\nconst content = api.choices?.[0]?.message?.content;\nif (!content) throw new Error('OpenAI: empty bid draft');\nlet parsed;\ntry {\n  parsed = JSON.parse(content);\n} catch {\n  throw new Error('OpenAI: bid draft was not valid JSON');\n}\nconst reply = String(parsed.reply || '').trim();\nif (!reply) throw new Error('OpenAI: bid draft had no reply');\nreturn [{\n  json: {\n    quote: String(parsed.quote || '').trim().slice(0, 300),\n    timeline: String(parsed.timeline || '').trim().slice(0, 300),\n    reply: reply.slice(0, 5000),\n  },\n}];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build bid prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build bid prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI draft bid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI draft bid": {
+      "main": [
+        [
+          {
+            "node": "Parse bid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

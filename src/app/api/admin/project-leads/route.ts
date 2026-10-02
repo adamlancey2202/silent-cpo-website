@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const [leads, newCount] = await Promise.all([
       db.projectLead.findMany({
-        orderBy: [{ score: "desc" }, { createdAt: "desc" }],
+        orderBy: { createdAt: "desc" },
         take: 100,
       }),
       db.projectLead.count({ where: { status: "new" } }),

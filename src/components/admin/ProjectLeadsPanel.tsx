@@ -11,9 +11,9 @@ type Lead = {
   source: string;
   title: string;
   excerpt: string;
-  score: number;
   budget: string;
-  why: string;
+  quote: string;
+  timeline: string;
   reply: string;
   contactEmail: string;
   status: string;
@@ -95,6 +95,28 @@ export function ProjectLeadsPanel({
     }
   }
 
+  async function createResponse(lead: Lead) {
+    setBusyId(`${lead.id}:draft`);
+    setError("");
+    try {
+      const res = await apiFetch("/api/admin/project-leads/draft", {
+        method: "POST",
+        body: JSON.stringify({ id: lead.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not draft a response");
+      setDrafts((current) => ({
+        ...current,
+        [lead.id]: { email: draftFor(lead).email, reply: data.reply ?? "" },
+      }));
+      setLeads((current) => current.map((item) => (item.id === lead.id ? { ...item, ...data } : item)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not draft a response");
+    } finally {
+      setBusyId("");
+    }
+  }
+
   async function send(lead: Lead) {
     const draft = draftFor(lead);
     setBusyId(`${lead.id}:send`);
@@ -122,7 +144,7 @@ export function ProjectLeadsPanel({
         <div>
           <h2 className="text-sm tracking-wider text-gold">PROJECT FINDER</h2>
           <p className="mt-1 text-xs text-mist/60">
-            Review scored listings, edit the reply, then send it yourself.
+            Read the listing, then press Create response for a bid with a quote and timeline. Edit it before you send.
           </p>
         </div>
         <div className="flex gap-2">
@@ -157,13 +179,16 @@ export function ProjectLeadsPanel({
 
       {visible.map((lead) => {
         const draft = draftFor(lead);
-        const busy = busyId === lead.id || busyId === `${lead.id}:send`;
+        const busy = busyId.startsWith(lead.id);
         return (
           <article key={lead.id} className="space-y-3 border border-mist/10 p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[10px] tracking-wider text-gold">
-                  {lead.score}/10 · {lead.source} · {lead.budget || "Budget not stated"}
+                  {lead.source}
+                  {lead.budget ? ` · Budget ${lead.budget}` : ""}
+                  {lead.quote ? ` · Quote ${lead.quote}` : ""}
+                  {lead.timeline ? ` · ${lead.timeline}` : ""}
                 </p>
                 <h3 className="mt-1 font-medium text-bone">{lead.title}</h3>
               </div>
@@ -177,9 +202,8 @@ export function ProjectLeadsPanel({
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
-            {lead.why && <p className="text-sm text-mist/80">{lead.why}</p>}
             {lead.excerpt && (
-              <p className="line-clamp-4 text-xs leading-relaxed text-mist/50">{lead.excerpt}</p>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-mist/70">{lead.excerpt}</p>
             )}
             <label className="block text-[10px] tracking-wider text-mist/50">
               REPLY
@@ -214,7 +238,10 @@ export function ProjectLeadsPanel({
               {lead.sentAt ? ` Sent ${new Date(lead.sentAt).toLocaleString("en-GB")}.` : ""}
             </p>
             <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={busy} onClick={() => send(lead)} className="bg-gold px-3 py-2 text-xs tracking-wider text-deep disabled:opacity-50">
+              <button type="button" disabled={busy} onClick={() => createResponse(lead)} className={button}>
+                {busyId === `${lead.id}:draft` ? "DRAFTING" : "CREATE RESPONSE"}
+              </button>
+              <button type="button" disabled={busy || !draft.reply.trim()} onClick={() => send(lead)} className="bg-gold px-3 py-2 text-xs tracking-wider text-deep disabled:opacity-50">
                 {busyId === `${lead.id}:send` ? "SENDING" : "SEND EMAIL"}
               </button>
               {lead.status !== "dismissed" && lead.status !== "sent" && (

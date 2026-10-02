@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "ProjectLead" ADD COLUMN "quote" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "ProjectLead" ADD COLUMN "timeline" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "ProjectLead" ALTER COLUMN "score" SET DEFAULT 0;

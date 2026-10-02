@@ -36,14 +36,10 @@ export async function POST(request: Request) {
         source: pick.source,
         title: pick.title,
         excerpt: pick.excerpt,
-        score: pick.score,
         budget: pick.budget,
-        why: pick.why,
       };
       if (!existing) {
-        await db.projectLead.create({
-          data: { ...data, reply: pick.replyAngle, contactEmail: pick.contactEmail },
-        });
+        await db.projectLead.create({ data });
         created += 1;
         continue;
       }
@@ -51,14 +47,7 @@ export async function POST(request: Request) {
         skipped += 1;
         continue;
       }
-      await db.projectLead.update({
-        where: { id: existing.id },
-        data: {
-          ...data,
-          ...(existing.reply ? {} : { reply: pick.replyAngle }),
-          ...(existing.contactEmail ? {} : { contactEmail: pick.contactEmail }),
-        },
-      });
+      await db.projectLead.update({ where: { id: existing.id }, data });
       updated += 1;
     }
 

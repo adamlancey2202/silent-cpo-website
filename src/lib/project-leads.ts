@@ -16,18 +16,20 @@ export const projectPick = z
       .refine((value) => value.startsWith("https://"), "Use an https URL"),
     title: z.string().trim().min(1).max(200),
     source: z.string().trim().min(1).max(80),
-    score: z.coerce.number().int().min(1).max(10),
     budget: z.string().trim().max(80).default(""),
-    why: z.string().trim().max(500).default(""),
-    replyAngle: z.string().trim().max(2000).default(""),
-    contactEmail: optionalEmail.default(""),
-    excerpt: z.string().trim().max(2000).default(""),
+    excerpt: z.string().trim().max(4000).default(""),
   })
   .strict();
 
 export const projectBatch = z
   .object({
-    picks: z.array(projectPick).max(30),
+    picks: z.array(projectPick).max(60),
+  })
+  .strict();
+
+export const draftLeadInput = z
+  .object({
+    id: z.string().trim().min(1).max(100),
   })
   .strict();
 

@@ -149,9 +149,11 @@ model ProjectLead {
   source       String
   title        String
   excerpt      String    @default("") @db.Text
-  score        Int
+  score        Int       @default(0)
   budget       String    @default("")
   why          String    @default("") @db.Text
+  quote        String    @default("") @db.Text
+  timeline     String    @default("") @db.Text
   reply        String    @default("") @db.Text
   contactEmail String    @default("")
   status       String    @default("new")
