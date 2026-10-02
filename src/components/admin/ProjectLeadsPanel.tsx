@@ -52,6 +52,8 @@ export function ProjectLeadsPanel({
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
+  const [cardError, setCardError] = useState<Record<string, string>>({});
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
   const onNewCountRef = useRef(onNewCount);
   onNewCountRef.current = onNewCount;
 
@@ -108,7 +110,7 @@ export function ProjectLeadsPanel({
 
   async function createResponse(lead: Lead) {
     setBusyId(`${lead.id}:draft`);
-    setError("");
+    setCardError((current) => ({ ...current, [lead.id]: "" }));
     try {
       const res = await apiFetch("/api/admin/project-leads/draft", {
         method: "POST",
@@ -120,9 +122,13 @@ export function ProjectLeadsPanel({
         ...current,
         [lead.id]: { email: draftFor(lead).email, reply: data.reply ?? "" },
       }));
+      setOpened((current) => ({ ...current, [lead.id]: true }));
       setLeads((current) => current.map((item) => (item.id === lead.id ? { ...item, ...data } : item)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not draft a response");
+      setCardError((current) => ({
+        ...current,
+        [lead.id]: err instanceof Error ? err.message : "Could not draft a response",
+      }));
     } finally {
       setBusyId("");
     }
@@ -197,9 +203,7 @@ export function ProjectLeadsPanel({
               <div>
                 <p className="text-[10px] tracking-wider text-gold">
                   {lead.source}
-                  {lead.budget ? ` · Budget ${lead.budget}` : ""}
-                  {lead.quote ? ` · Quote ${lead.quote}` : ""}
-                  {lead.timeline ? ` · ${lead.timeline}` : ""}
+                  {lead.budget ? ` · ${lead.budget}` : ""}
                 </p>
                 <h3 className="mt-1 font-medium text-bone">{lead.title}</h3>
               </div>
@@ -221,44 +225,9 @@ export function ProjectLeadsPanel({
                 </a>
               </p>
             )}
-            <label className="block text-[10px] tracking-wider text-mist/50">
-              REPLY
-              <textarea
-                value={draft.reply}
-                onChange={(event) =>
-                  setDrafts((current) => ({
-                    ...current,
-                    [lead.id]: { ...draft, reply: event.target.value },
-                  }))
-                }
-                rows={10}
-                className={`${input} mt-1`}
-              />
-            </label>
-            <label className="block text-[10px] tracking-wider text-mist/50">
-              THEIR EMAIL
-              <input
-                value={draft.email}
-                onChange={(event) =>
-                  setDrafts((current) => ({
-                    ...current,
-                    [lead.id]: { ...draft, email: event.target.value },
-                  }))
-                }
-                placeholder="Paste an email from the listing"
-                className={`${input} mt-1`}
-              />
-            </label>
-            <p className="text-[10px] text-mist/40">
-              Most posts do not include an email. Open the listing, copy one if it is there, then send.
-              {lead.sentAt ? ` Sent ${new Date(lead.sentAt).toLocaleString("en-GB")}.` : ""}
-            </p>
             <div className="flex flex-wrap gap-2">
               <button type="button" disabled={busy} onClick={() => createResponse(lead)} className={button}>
                 {busyId === `${lead.id}:draft` ? "DRAFTING" : "CREATE RESPONSE"}
-              </button>
-              <button type="button" disabled={busy || !draft.reply.trim()} onClick={() => send(lead)} className="bg-gold px-3 py-2 text-xs tracking-wider text-deep disabled:opacity-50">
-                {busyId === `${lead.id}:send` ? "SENDING" : "SEND EMAIL"}
               </button>
               {lead.status !== "dismissed" && lead.status !== "sent" && (
                 <button type="button" disabled={busy} onClick={() => setStatus(lead.id, "dismissed")} className={button}>
@@ -271,6 +240,51 @@ export function ProjectLeadsPanel({
                 </button>
               )}
             </div>
+            {cardError[lead.id] && <p className="text-sm text-red-400">{cardError[lead.id]}</p>}
+            {(opened[lead.id] || lead.status === "sent") && draft.reply.trim() && (
+              <>
+                {(lead.quote || lead.timeline) && (
+                  <p className="text-xs text-gold">
+                    {[lead.quote && `Quote ${lead.quote}`, lead.timeline].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+                <label className="block text-[10px] tracking-wider text-mist/50">
+                  REPLY
+                  <textarea
+                    value={draft.reply}
+                    onChange={(event) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [lead.id]: { ...draft, reply: event.target.value },
+                      }))
+                    }
+                    rows={10}
+                    className={`${input} mt-1`}
+                  />
+                </label>
+                <label className="block text-[10px] tracking-wider text-mist/50">
+                  THEIR EMAIL
+                  <input
+                    value={draft.email}
+                    onChange={(event) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [lead.id]: { ...draft, email: event.target.value },
+                      }))
+                    }
+                    placeholder="Paste an email from the listing"
+                    className={`${input} mt-1`}
+                  />
+                </label>
+                <p className="text-[10px] text-mist/40">
+                  Most posts do not include an email. Open the listing, copy one if it is there, then send.
+                  {lead.sentAt ? ` Sent ${new Date(lead.sentAt).toLocaleString("en-GB")}.` : ""}
+                </p>
+                <button type="button" disabled={busy} onClick={() => send(lead)} className="bg-gold px-3 py-2 text-xs tracking-wider text-deep disabled:opacity-50">
+                  {busyId === `${lead.id}:send` ? "SENDING" : "SEND EMAIL"}
+                </button>
+              </>
+            )}
           </article>
         );
       })}

@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { apiError, json, readBody } from "@/lib/content/http";
 import { projects } from "@/lib/projects";
+import { budgetInGbp } from "@/lib/gbp";
 import { draftLeadInput } from "@/lib/project-leads";
 
 const portfolio = projects
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
     }
     const lead = await db.projectLead.findUnique({ where: { id: parsed.data.id } });
     if (!lead) return json({ error: "Listing not found." }, 404);
+    const budget = await budgetInGbp(lead.budget);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
               "2. A concrete plan of 3-4 lines: what you build first, what follows, and the stack only where it matters to them.",
               "3. One sentence naming the thing that usually derails this type of project and how the first milestone handles it. State it as something you take care of.",
               "4. The quote and the timeline, in one line.",
-              "5. One line naming a relevant portfolio project, with its URL if one is listed. Skip if nothing fits.",
+              "5. One line naming a relevant portfolio project. Include its URL only when the portfolio list shows one. Never invent a URL. Skip if nothing fits.",
               "6. One or two practical questions that help confirm the quote, such as existing assets, integrations or a deadline.",
               "7. A close offering to start on the first milestone.",
               'Banned: "I noticed", "Have you considered", "I hope you are doing well", "Let\'s connect to explore", "perfect fit", unsolicited "discovery phase" pitches, and mentioning being new.',
@@ -67,7 +69,7 @@ export async function POST(request: Request) {
               "## Listing",
               `Title: ${lead.title}`,
               `Source: ${lead.source}`,
-              lead.budget ? `Budget stated by client: ${lead.budget}` : "Budget: not stated",
+              budget ? `Budget stated by client, in GBP: ${budget}` : "Budget: not stated",
               lead.excerpt,
             ].join("\n"),
           },

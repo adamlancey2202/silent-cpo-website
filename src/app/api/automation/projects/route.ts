@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { apiError, json, readBody } from "@/lib/content/http";
+import { budgetInGbp } from "@/lib/gbp";
 import { canonicalLeadUrl, projectBatch } from "@/lib/project-leads";
 
 function allowed(request: Request) {
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
         source: pick.source,
         title: pick.title,
         excerpt: pick.excerpt,
-        budget: pick.budget,
+        budget: await budgetInGbp(pick.budget),
       };
       if (!existing) {
         await db.projectLead.create({ data });

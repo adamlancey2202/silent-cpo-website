@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { apiError, json, readBody } from "@/lib/content/http";
 import { isMailerSendConfigured } from "@/lib/mailersend";
+import { budgetInGbp } from "@/lib/gbp";
 import { leadStatusInput } from "@/lib/project-leads";
 
 export async function GET() {
@@ -14,8 +15,11 @@ export async function GET() {
       }),
       db.projectLead.count({ where: { status: "new" } }),
     ]);
+    const withGbp = await Promise.all(
+      leads.map(async (lead) => ({ ...lead, budget: await budgetInGbp(lead.budget) }))
+    );
     return json({
-      leads,
+      leads: withGbp,
       mailersendConfigured: isMailerSendConfigured(),
       newCount,
     });
