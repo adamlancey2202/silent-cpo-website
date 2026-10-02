@@ -50,7 +50,13 @@ export async function PATCH(request: Request) {
       where: { id: existing.id },
       data: {
         status: parsed.data.status,
-        ...(parsed.data.status === "bidded" ? { reply: parsed.data.reply, sentAt: new Date() } : {}),
+        ...(parsed.data.status === "bidded"
+          ? {
+              reply: parsed.data.reply,
+              ...(parsed.data.quote ? { quote: parsed.data.quote } : {}),
+              ...(existing.status === "bidded" ? {} : { sentAt: new Date() }),
+            }
+          : {}),
         ...(parsed.data.status === "new" ? { sentAt: null } : {}),
       },
     });

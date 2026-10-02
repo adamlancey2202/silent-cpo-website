@@ -47,7 +47,7 @@ export function ProjectLeadsPanel({
 }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filter, setFilter] = useState<Filter>("new");
-  const [drafts, setDrafts] = useState<Record<string, { email: string; reply: string }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { email: string; reply: string; quote: string }>>({});
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
@@ -69,7 +69,7 @@ export function ProjectLeadsPanel({
       setDrafts((current) => {
         const merged = { ...current };
         for (const lead of next) {
-          if (!merged[lead.id]) merged[lead.id] = { email: lead.contactEmail, reply: lead.reply };
+          if (!merged[lead.id]) merged[lead.id] = { email: lead.contactEmail, reply: lead.reply, quote: lead.quote };
         }
         return merged;
       });
@@ -85,7 +85,7 @@ export function ProjectLeadsPanel({
   }, [load]);
 
   function draftFor(lead: Lead) {
-    return drafts[lead.id] ?? { email: lead.contactEmail, reply: lead.reply };
+    return drafts[lead.id] ?? { email: lead.contactEmail, reply: lead.reply, quote: lead.quote };
   }
 
   async function setStatus(id: string, status: "new" | "dismissed") {
@@ -118,7 +118,7 @@ export function ProjectLeadsPanel({
       if (!res.ok) throw new Error(data.error || "Could not draft a response");
       setDrafts((current) => ({
         ...current,
-        [lead.id]: { email: draftFor(lead).email, reply: data.reply ?? "" },
+        [lead.id]: { email: draftFor(lead).email, reply: data.reply ?? "", quote: data.quote ?? lead.quote },
       }));
       setOpened((current) => ({ ...current, [lead.id]: true }));
       setLeads((current) => current.map((item) => (item.id === lead.id ? { ...item, ...data } : item)));
@@ -139,7 +139,7 @@ export function ProjectLeadsPanel({
     try {
       const res = await apiFetch("/api/admin/project-leads", {
         method: "PATCH",
-        body: JSON.stringify({ id: lead.id, status: "bidded", reply: draft.reply }),
+        body: JSON.stringify({ id: lead.id, status: "bidded", reply: draft.reply, quote: draft.quote }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not save the bid");
@@ -240,13 +240,20 @@ export function ProjectLeadsPanel({
             {cardError[lead.id] && <p className="text-sm text-red-400">{cardError[lead.id]}</p>}
             {(opened[lead.id] || lead.status === "sent" || lead.status === "bidded") && draft.reply.trim() && (
               <>
-                {(lead.quote || lead.timeline) && (
-                  <p className="text-xs text-gold">
-                    {[lead.quote && `Bid amount ${lead.quote}`, lead.timeline && `Delivered in ${lead.timeline}`]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                )}
+                <label className="block text-[10px] tracking-wider text-mist/50">
+                  BID AMOUNT
+                  <input
+                    value={draft.quote}
+                    onChange={(event) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [lead.id]: { ...draft, quote: event.target.value },
+                      }))
+                    }
+                    className={`${input} mt-1`}
+                  />
+                </label>
+                {lead.timeline && <p className="text-xs text-gold">Delivered in {lead.timeline}</p>}
                 <label className="block text-[10px] tracking-wider text-mist/50">
                   PROPOSAL · {draft.reply.trim().length} CHARACTERS
                   <textarea
@@ -265,9 +272,9 @@ export function ProjectLeadsPanel({
                   Paste the bid amount, days, milestone and proposal into Freelancer. The proposal box needs at least 100 characters.
                   {lead.sentAt ? ` Saved ${new Date(lead.sentAt).toLocaleString("en-GB")}.` : ""}
                 </p>
-                {lead.status !== "bidded" && lead.status !== "sent" && (
+                {lead.status !== "sent" && (
                   <button type="button" disabled={busy || !draft.reply.trim()} onClick={() => markBidded(lead)} className="bg-gold px-3 py-2 text-xs tracking-wider text-deep disabled:opacity-50">
-                    {busyId === `${lead.id}:bid` ? "SAVING" : "MARK AS BIDDED"}
+                    {busyId === `${lead.id}:bid` ? "SAVING" : lead.status === "bidded" ? "SAVE BID" : "MARK AS BIDDED"}
                   </button>
                 )}
               </>

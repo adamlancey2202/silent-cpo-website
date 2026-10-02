@@ -96,6 +96,7 @@ export const leadStatusInput = z
     id: z.string().trim().min(1).max(100),
     status: z.enum(["new", "dismissed", "bidded"]),
     reply: z.string().trim().max(5000).optional(),
+    quote: z.string().trim().max(80).optional(),
   })
   .strict();
 

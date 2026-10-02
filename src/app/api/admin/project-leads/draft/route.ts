@@ -40,7 +40,7 @@ const system = [
   "Be client-focused and lightly empathetic about the problem they are solving. Do not make the bid mainly about the writer.",
   "Use the client's name only when it is explicitly present. Never guess it.",
   "Price in GBP for that scoped first version, as a single figure or a tight range, and say what it covers. A brochure site is a few hundred pounds. An interactive tool, calculator, or multi-step workflow is a web app and costs more. A web app with payments and accounts is low thousands. Never invent a client budget.",
-  "Price competitively against the stated budget without automatically being the cheapest. Timeline is working days. State the total and what the first milestone delivers, and never promise an unrealistic deadline.",
+  "Price competitively against the stated budget without automatically being the cheapest. The Freelancer account cannot bid above 2000 in the project currency until it has five reviews, so bidAmount must be 2000 or less and the proposal must use that same figure. Timeline is working days. State the total and what the first milestone delivers, and never promise an unrealistic deadline.",
   "Only cite a portfolio project when its core function is directly comparable, not merely because both products have users, forms, or a good interface. A booking site, member platform, or personal tracker is not proof for a pay calculator. If no project is directly comparable, omit portfolio proof. Never invent ratings, reviews, clients, results, years of experience, or URLs.",
   "Ask one specific, open-ended question only when the answer is not already in the brief. It should make replying easy and help confirm scope.",
   "For calculators driven by laws, rates, eligibility, or external data, prioritise asking which authoritative rule set, award, jurisdiction, or data source should launch first. Do not ask the client to repeat a user journey they already described.",
@@ -125,7 +125,8 @@ export async function POST(request: Request) {
     } catch {
       return json({ error: "The draft came back in an unexpected format. Try again." }, 502);
     }
-    const amount = Math.round(Number(draft.bidAmount));
+    const rawAmount = Math.round(Number(draft.bidAmount));
+    const amount = Number.isFinite(rawAmount) ? Math.min(rawAmount, 2000) : rawAmount;
     const days = Math.round(Number(draft.deliveryDays));
     const currency = String(draft.bidCurrency || "").trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
     const milestone = String(draft.milestone || "First milestone").trim().slice(0, 80);
