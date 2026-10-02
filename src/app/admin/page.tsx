@@ -12,6 +12,7 @@ import {
   Layers,
   BarChart3,
   Kanban,
+  Newspaper,
 } from "lucide-react";
 import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { ContentPanel } from "@/components/admin/ContentPanel";
@@ -20,7 +21,7 @@ import { StudioPanel } from "@/components/admin/StudioPanel";
 import { RevenueCards } from "@/components/admin/RevenueCards";
 import { formatMoney } from "@/lib/revenue";
 
-type Tab = "overview" | "contacts" | "payments" | "platform" | "content" | "analytics" | "projects";
+type Tab = "overview" | "contacts" | "newsletter" | "payments" | "platform" | "content" | "analytics" | "projects";
 
 interface Contact {
   id: string;
@@ -30,6 +31,15 @@ interface Contact {
   project: string;
   budget: string | null;
   message: string;
+  status: string;
+  createdAt: string;
+}
+
+interface Subscriber {
+  id: string;
+  email: string;
+  name: string | null;
+  source: string | null;
   status: string;
   createdAt: string;
 }
@@ -93,6 +103,7 @@ export default function AdminPage() {
   const [inputSecret, setInputSecret] = useState("");
   const [tab, setTab] = useState<Tab>("overview");
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [revenue, setRevenue] = useState<Revenue | null>(null);
@@ -134,6 +145,7 @@ export default function AdminPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load dashboard");
       setContacts(data.contacts);
+      setSubscribers(data.subscribers ?? []);
       setPaymentLinks(data.paymentLinks);
       setInvoices(data.invoices);
       setRevenue(data.revenue);
@@ -240,6 +252,7 @@ export default function AdminPage() {
   const tabs: { id: Tab; label: string; icon: typeof Mail }[] = [
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
     { id: "contacts", label: "Enquiries", icon: Mail },
+    { id: "newsletter", label: "Newsletter", icon: Newspaper },
     { id: "payments", label: "Stripe", icon: CreditCard },
     { id: "projects", label: "Projects", icon: Kanban },
     { id: "content", label: "Content", icon: FileText },
@@ -421,6 +434,41 @@ export default function AdminPage() {
                   <p className="mt-2 text-sm text-mist/70">{c.message}</p>
                   <p className="mt-3 text-[10px] text-mist/40">
                     {new Date(c.createdAt).toLocaleString("en-GB")}
+                  </p>
+                </article>
+              ))
+            )}
+          </div>
+        )}
+
+        {tab === "newsletter" && (
+          <div className="space-y-4">
+            {loading && subscribers.length === 0 ? (
+              <p className="text-sm text-mist/60">Loading...</p>
+            ) : subscribers.length === 0 ? (
+              <p className="text-sm text-mist/60">No newsletter signups yet.</p>
+            ) : (
+              subscribers.map((subscriber) => (
+                <article
+                  key={subscriber.id}
+                  className="border border-mist/10 bg-midnight/30 p-6"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="font-medium text-bone">
+                        {subscriber.name || subscriber.email}
+                      </h3>
+                      <p className="text-sm text-mist/60">{subscriber.email}</p>
+                    </div>
+                    <span className="text-[10px] tracking-wider text-gold">
+                      {subscriber.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-xs text-mist/60">
+                    {subscriber.source ? `From ${subscriber.source}` : "Source not recorded"}
+                  </p>
+                  <p className="mt-3 text-[10px] text-mist/40">
+                    {new Date(subscriber.createdAt).toLocaleString("en-GB")}
                   </p>
                 </article>
               ))

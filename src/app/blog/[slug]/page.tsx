@@ -9,6 +9,7 @@ import { publishedArticle } from "@/lib/content/public";
 import { BlogCoverImage } from "@/components/BlogCoverImage";
 import { BlogContactSection } from "@/components/BlogContactSection";
 import { BlogInlineCta } from "@/components/BlogInlineCta";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { blogOgImageMeta } from "@/lib/blog-media";
 import { siteConfig } from "@/lib/site";
 
@@ -85,6 +86,7 @@ export default async function ArticlePage({ params }: Props) {
             description="If this article raised questions about scope, budget or the right approach, send a short note and I’ll reply within 24 hours."
             linkLabel="Send a message"
           />
+          <NewsletterSignup source={article.slug ?? "blog"} className="mt-10" />
         </article>
         <BlogContactSection className="mt-4" compact />
         <script

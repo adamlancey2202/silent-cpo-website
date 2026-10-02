@@ -142,6 +142,17 @@ model StudioTask {
   @@index([projectId, status, sortOrder])
 }
 
+model NewsletterSubscriber {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String?
+  source           String?
+  status           String   @default("subscribed")
+  unsubscribeToken String   @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
 // Public marketing settings (measurement IDs are not secrets; editable in admin).
 model SiteSettings {
   id               String   @id @default("default")

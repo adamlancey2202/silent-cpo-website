@@ -11,11 +11,22 @@ export async function GET() {
 
   await syncPaymentStatuses();
 
-  const [paymentLinks, invoices, contacts, openEnquiries] = await Promise.all([
+  const [paymentLinks, invoices, contacts, openEnquiries, subscribers] = await Promise.all([
     db.paymentLink.findMany({ orderBy: { createdAt: "desc" } }),
     db.invoice.findMany({ orderBy: { createdAt: "desc" } }),
     db.contact.findMany({ orderBy: { createdAt: "desc" } }),
     db.contact.count({ where: { status: "new" } }),
+    db.newsletterSubscriber.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        source: true,
+        status: true,
+        createdAt: true,
+      },
+    }),
   ]);
 
   const revenue = calculateRevenue({ invoices, paymentLinks });
@@ -25,6 +36,7 @@ export async function GET() {
     paymentLinks,
     invoices,
     contacts,
+    subscribers,
     counts: {
       contacts: contacts.length,
       openEnquiries,

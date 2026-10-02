@@ -31,19 +31,19 @@ const sections = [
   },
   {
     title: "What data we collect",
-    content: `When you contact us via the enquiry form, we collect: your name, email address, optional phone number, project type, optional budget range, and your message. We may also collect technical data such as your IP address for security purposes (via Cloudflare Turnstile spam protection). We do not use cookies for tracking or advertising.`,
+    content: `When you contact us via the enquiry form, we collect: your name, email address, optional phone number, project type, optional budget range, and your message. When you sign up to the newsletter, we collect your email address, an optional name, and which page you signed up from. We may also collect technical data such as your IP address for security purposes (via Cloudflare Turnstile spam protection). We do not use cookies for tracking or advertising.`,
   },
   {
     title: "Why we collect it",
-    content: `We process your data to respond to your enquiry and discuss potential projects. The legal basis is legitimate interest (responding to business enquiries) and, where applicable, your consent when submitting the contact form.`,
+    content: `We process enquiry data to respond to your enquiry and discuss potential projects. The legal basis is legitimate interest (responding to business enquiries) and, where applicable, your consent when submitting the contact form. Newsletter data is used to send new articles and the strategy-call details you asked for. The legal basis is your consent, and you can unsubscribe from any email.`,
   },
   {
     title: "How long we keep it",
-    content: `Enquiry data is retained for up to 24 months from your last contact, unless a business relationship is established (in which case data is retained as required for contract fulfilment and legal obligations). You may request deletion at any time.`,
+    content: `Enquiry data is retained for up to 24 months from your last contact, unless a business relationship is established (in which case data is retained as required for contract fulfilment and legal obligations). Newsletter details are kept until you unsubscribe or ask us to delete them. You may request deletion at any time.`,
   },
   {
     title: "Third parties",
-    content: `We use the following service providers who may process your data on our behalf:\n\n• Hosting provider (e.g. Vercel) — serves the website\n• Cloudflare Turnstile — spam protection on the contact form\n• Stripe — payment processing (admin use only; no contact form data shared)\n\nWe do not sell your personal data to third parties.`,
+    content: `We use the following service providers who may process your data on our behalf:\n\n• Hosting provider (e.g. Vercel) — serves the website\n• Cloudflare Turnstile — spam protection on public forms\n• MailerSend — sends enquiry notifications and newsletter emails\n• Stripe — payment processing (admin use only; no contact form data shared)\n\nWe do not sell your personal data to third parties.`,
   },
   {
     title: "Your rights",

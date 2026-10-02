@@ -7,6 +7,7 @@ import { blogOgImageMeta } from "@/lib/blog-media";
 import { siteConfig } from "@/lib/site";
 import { BlogContactSection } from "@/components/BlogContactSection";
 import { BlogInlineCta } from "@/components/BlogInlineCta";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 export const dynamic = "force-dynamic";
 const og = blogOgImageMeta();
@@ -67,6 +68,7 @@ export default async function BlogPage() {
             .
           </p>
         )}
+        <NewsletterSignup source="blog" className="mt-16 max-w-2xl" />
         <BlogContactSection className="mt-20" />
       </main>
       <Footer />
