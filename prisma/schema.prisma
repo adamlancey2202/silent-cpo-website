@@ -83,6 +83,64 @@ model ContentTopicPlanRun {
   createdAt   DateTime @default(now())
 }
 
+// Delivery tracker (admin project tool). Money fields stay text so vouchers
+// and partial payments can be written the way they were agreed.
+model StudioClient {
+  id        String          @id @default(cuid())
+  name      String
+  email     String          @default("")
+  phone     String          @default("")
+  whatsapp  String          @default("")
+  notes     String          @default("")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  projects  StudioProject[]
+}
+
+model StudioProject {
+  id                String       @id @default(cuid())
+  clientId          String?
+  client            StudioClient? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  title             String
+  description       String       @default("")
+  projectType       String       @default("website")
+  status            String       @default("enquiry")
+  budget            String       @default("")
+  agreedCost        String       @default("")
+  amountPaid        String       @default("")
+  paymentType       String       @default("money")
+  paymentNotes      String       @default("")
+  deadline          String       @default("")
+  notes             String       @default("")
+  whatDoing         String       @default("")
+  discoveryFeedback String       @default("") @db.Text
+  quoteText         String       @default("") @db.Text
+  quoteFilename     String       @default("")
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  tasks             StudioTask[]
+
+  @@index([status, updatedAt])
+  @@index([clientId])
+}
+
+model StudioTask {
+  id          String         @id @default(cuid())
+  projectId   String?
+  project     StudioProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String         @default("")
+  status      String         @default("todo")
+  priority    String         @default("medium")
+  dueDate     String         @default("")
+  phase       String         @default("")
+  sortOrder   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([projectId, status, sortOrder])
+}
+
 // Public marketing settings (measurement IDs are not secrets; editable in admin).
 model SiteSettings {
   id               String   @id @default("default")

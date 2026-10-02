@@ -5,6 +5,17 @@ import { ExternalLink, RefreshCw } from "lucide-react";
 
 const STORAGE_KEY = "content-studio-analytics-snapshot-hidden";
 
+type GscTopicSuggestion = {
+  query: string;
+  clicks: number;
+  impressions: number;
+  position: number;
+  ctr: number;
+  reason: string;
+  suggestedTitle: string;
+  suggestedKeyword: string;
+};
+
 type Snapshot = {
   rangeDays: number;
   measurementId: string;
@@ -15,23 +26,27 @@ type Snapshot = {
   searchConsoleConnected: boolean;
   totals: { sessions: number; pageViews: number; clicks: number; impressions: number };
   blogPages: { path: string; pageViews: number; sessions: number; clicks: number; impressions: number }[];
+  querySuggestions: GscTopicSuggestion[];
   notice?: string;
 };
 
 type Props = {
   apiFetch: (url: string, options?: RequestInit) => Promise<Response>;
   compact?: boolean;
+  onTopicAdded?: () => void;
 };
 
 function fmt(n: number) {
   return n.toLocaleString("en-GB");
 }
 
-export function AnalyticsSnapshotPanel({ apiFetch, compact = false }: Props) {
+export function AnalyticsSnapshotPanel({ apiFetch, compact = false, onTopicAdded }: Props) {
   const [hidden, setHidden] = useState(true);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [addingQuery, setAddingQuery] = useState<string | null>(null);
+  const [topicNotice, setTopicNotice] = useState("");
 
   useEffect(() => {
     try {
@@ -75,6 +90,49 @@ export function AnalyticsSnapshotPanel({ apiFetch, compact = false }: Props) {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
       /* ignore */
+    }
+  }
+
+  async function addReadyTopic(suggestion: GscTopicSuggestion) {
+    if (addingQuery) return;
+    setAddingQuery(suggestion.query);
+    setTopicNotice("");
+    setError("");
+    try {
+      const res = await apiFetch("/api/admin/content", {
+        method: "POST",
+        body: JSON.stringify({
+          kind: "topic",
+          title: suggestion.suggestedTitle,
+          status: "ready",
+          data: {
+            keyword: suggestion.suggestedKeyword,
+            audience: "People searching on Google (from Search Console data)",
+            intent: "Guide",
+            rationale: suggestion.reason,
+            brief: `Search Console query: "${suggestion.query}" — ${suggestion.impressions} impressions, ${suggestion.clicks} clicks, avg position ${suggestion.position.toFixed(1)} in the last ${snapshot?.rangeDays ?? 28} days.`,
+            priority: 2,
+            plannedDate: "",
+            targetUrl: "",
+          },
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Could not create topic");
+      setTopicNotice(`Added Ready topic: ${suggestion.suggestedTitle}`);
+      setSnapshot((prev) =>
+        prev
+          ? {
+              ...prev,
+              querySuggestions: prev.querySuggestions.filter((s) => s.query !== suggestion.query),
+            }
+          : prev,
+      );
+      onTopicAdded?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create topic");
+    } finally {
+      setAddingQuery(null);
     }
   }
 
@@ -170,6 +228,48 @@ export function AnalyticsSnapshotPanel({ apiFetch, compact = false }: Props) {
                 No blog paths with data yet. Publish posts and check back after Google has processed traffic.
               </p>
             )
+          )}
+
+          {topicNotice && <p className="mt-4 text-sm text-green">{topicNotice}</p>}
+
+          {snapshot.searchConsoleConnected && (
+            <div className="mt-8 rounded-xl border border-mist/15 bg-deep/40 p-4 md:p-5">
+              <h4 className="text-sm font-medium text-bone">Topic ideas from Search Console</h4>
+              <p className="mt-2 text-sm text-mist/70">
+                Real queries where you already get impressions but could earn more clicks or move up in results. Skips queries that match an existing topic title or keyword.
+              </p>
+              {snapshot.querySuggestions.length > 0 ? (
+                <ul className="mt-4 space-y-4">
+                  {snapshot.querySuggestions.map((s) => (
+                    <li
+                      key={s.query}
+                      className="flex flex-wrap items-start justify-between gap-3 border-t border-mist/10 pt-4 first:border-t-0 first:pt-0"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-bone">{s.suggestedTitle}</p>
+                        <p className="mt-1 font-mono text-xs text-mist/55">{s.query}</p>
+                        <p className="mt-2 text-xs text-mist/60">
+                          {fmt(s.impressions)} impressions · {fmt(s.clicks)} clicks · pos ~{s.position.toFixed(1)}
+                        </p>
+                        <p className="mt-1 text-sm text-mist/70">{s.reason}</p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={addingQuery !== null}
+                        className="shrink-0 rounded-lg border border-gold/40 px-3 py-2 text-xs text-gold hover:bg-gold/10 disabled:opacity-50"
+                        onClick={() => void addReadyTopic(s)}
+                      >
+                        {addingQuery === s.query ? "Adding…" : "Add as Ready topic"}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 text-sm text-mist/60">
+                  No new opportunities in this window yet — need more search data, or topics already cover these queries.
+                </p>
+              )}
+            </div>
           )}
 
           <a

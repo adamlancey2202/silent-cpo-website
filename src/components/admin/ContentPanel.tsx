@@ -130,7 +130,15 @@ export function ContentPanel({ apiFetch }: { apiFetch: Fetch }) {
         onGoTo={(next) => navigate(next)}
       />
     )}
-    {!loading && <AnalyticsSnapshotPanel apiFetch={apiFetch} compact />}
+    {!loading && (
+      <AnalyticsSnapshotPanel
+        apiFetch={apiFetch}
+        compact
+        onTopicAdded={() => {
+          void load();
+        }}
+      />
+    )}
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{[["Ready topics", readyTopics], ["Drafts to review", draftsToReview], ["Published", publishedCount], ["Approved sources", entries.filter((e) => e.kind === "source" && e.status === "approved").length]].map(([label, count]) => <div key={label} className="rounded-xl border border-mist/15 p-4"><p className="text-xs text-mist/70">{label}</p><p className="mt-2 text-2xl text-gold">{count}</p></div>)}</div>
     <nav aria-label="Content sections" className="flex flex-wrap gap-2">{[...kinds, "automation" as const].map((kind) => <button key={kind} disabled={saving} onClick={() => navigate(kind)} aria-pressed={section === kind} className={`${button} ${section === kind ? "bg-gold text-deep" : ""}`}>{kind === "automation" ? "n8n & history" : labels[kind]}</button>)}</nav>
     {error && <p role="alert" className="rounded-lg border border-red-400/40 p-4 text-sm text-red-300">{error}</p>}

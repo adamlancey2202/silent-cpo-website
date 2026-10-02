@@ -7,7 +7,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const providers = buildPlatformDashboard();
+  const providers = await buildPlatformDashboard();
   return NextResponse.json({
     providers,
     configuredCount: providers.filter((p) => p.configured).length,

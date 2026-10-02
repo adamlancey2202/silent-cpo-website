@@ -1,5 +1,6 @@
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { google } from "googleapis";
+import { buildGscTopicSuggestions, type GscTopicSuggestion } from "@/lib/gsc-topic-suggestions";
 import { getGoogleServiceAccount } from "@/lib/google-credentials";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -26,7 +27,13 @@ export type AnalyticsSnapshot = {
     impressions: number;
   };
   blogPages: BlogPageMetric[];
+  querySuggestions: GscTopicSuggestion[];
   notice?: string;
+};
+
+export type AnalyticsSnapshotOptions = {
+  existingTopicTitles?: string[];
+  existingTopicKeywords?: string[];
 };
 
 function dateRange(days: number) {
@@ -37,7 +44,10 @@ function dateRange(days: number) {
   return { startDate: fmt(start), endDate: fmt(end) };
 }
 
-export async function fetchAnalyticsSnapshot(rangeDays = 28): Promise<AnalyticsSnapshot> {
+export async function fetchAnalyticsSnapshot(
+  rangeDays = 28,
+  options: AnalyticsSnapshotOptions = {},
+): Promise<AnalyticsSnapshot> {
   const settings = await getSiteSettings();
   const propertyId = settings.ga4PropertyId.replace(/\D/g, "");
   const gscSiteUrl = settings.gscSiteUrl.trim();
@@ -53,6 +63,7 @@ export async function fetchAnalyticsSnapshot(rangeDays = 28): Promise<AnalyticsS
     searchConsoleConnected: false,
     totals: { sessions: 0, pageViews: 0, clicks: 0, impressions: 0 },
     blogPages: [],
+    querySuggestions: [],
   };
 
   if (!credentials) {
@@ -148,6 +159,28 @@ export async function fetchAnalyticsSnapshot(rangeDays = 28): Promise<AnalyticsS
         existing.impressions = Number(row.impressions ?? 0);
         blogPaths.set(path, existing);
       }
+      const byQuery = await searchconsole.searchanalytics.query({
+        siteUrl: gscSiteUrl,
+        requestBody: {
+          startDate,
+          endDate,
+          dimensions: ["query"],
+          rowLimit: 100,
+        },
+      });
+      const queryRows =
+        byQuery.data.rows?.map((row) => ({
+          query: row.keys?.[0] ?? "",
+          clicks: Number(row.clicks ?? 0),
+          impressions: Number(row.impressions ?? 0),
+          ctr: Number(row.ctr ?? 0),
+          position: Number(row.position ?? 0),
+        })) ?? [];
+      empty.querySuggestions = buildGscTopicSuggestions(queryRows, {
+        titles: options.existingTopicTitles ?? [],
+        keywords: options.existingTopicKeywords ?? [],
+      });
+
       empty.searchConsoleConnected = true;
     } catch {
       empty.notice =

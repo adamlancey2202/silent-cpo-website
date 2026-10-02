@@ -11,14 +11,16 @@ import {
   RefreshCw,
   Layers,
   BarChart3,
+  Kanban,
 } from "lucide-react";
 import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { ContentPanel } from "@/components/admin/ContentPanel";
 import { PlatformPanel } from "@/components/admin/PlatformPanel";
+import { StudioPanel } from "@/components/admin/StudioPanel";
 import { RevenueCards } from "@/components/admin/RevenueCards";
 import { formatMoney } from "@/lib/revenue";
 
-type Tab = "overview" | "contacts" | "payments" | "platform" | "content" | "analytics";
+type Tab = "overview" | "contacts" | "payments" | "platform" | "content" | "analytics" | "projects";
 
 interface Contact {
   id: string;
@@ -239,6 +241,7 @@ export default function AdminPage() {
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
     { id: "contacts", label: "Enquiries", icon: Mail },
     { id: "payments", label: "Stripe", icon: CreditCard },
+    { id: "projects", label: "Projects", icon: Kanban },
     { id: "content", label: "Content", icon: FileText },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
     { id: "platform", label: "Platform", icon: Layers },
@@ -378,8 +381,9 @@ export default function AdminPage() {
                   invoices and active payment links awaiting payment.
                 </p>
                 <p>
-                  <strong className="text-bone">Project tracking</strong> — Use
-                  the SilentCPO Project Tool for kanbans, budgets, and workflows.
+                  <strong className="text-bone">Projects</strong> — Client work,
+                  kanban, and the copilot live on the Projects tab. Those totals
+                  are separate from Stripe.
                 </p>
               </div>
             </section>
@@ -423,6 +427,8 @@ export default function AdminPage() {
             )}
           </div>
         )}
+
+        {tab === "projects" && <StudioPanel apiFetch={apiFetch} />}
 
         {tab === "content" && <ContentPanel apiFetch={apiFetch} />}
 
