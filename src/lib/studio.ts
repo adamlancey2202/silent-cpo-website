@@ -175,6 +175,7 @@ export type StudioTaskView = {
   dueDate: string;
   phase: string;
   sortOrder: number;
+  onTaskList: boolean;
 };
 
 export type StudioProjectView = {
@@ -357,7 +358,11 @@ export function computeNudges(projects: StudioProjectView[]): StudioNudge[] {
   return nudges.sort((a, b) => rank[a.priority] - rank[b.priority]);
 }
 
-export function buildDashboard(projects: StudioProjectView[], clientCount: number) {
+export function buildDashboard(
+  projects: StudioProjectView[],
+  clientCount: number,
+  looseTasks: StudioTaskView[] = [],
+) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   let received = 0;
@@ -412,10 +417,10 @@ export function buildDashboard(projects: StudioProjectView[], clientCount: numbe
   return {
     activeProjects: projects.filter((project) => !CLOSED_STATUSES.has(project.status)).length,
     totalClients: clientCount,
-    openTasks: projects.reduce(
-      (count, project) => count + project.tasks.filter((task) => task.status !== "done").length,
-      0,
-    ),
+    openTasks: [
+      ...projects.flatMap((project) => project.tasks.filter((task) => task.onTaskList)),
+      ...looseTasks,
+    ].filter((task) => task.status !== "done").length,
     overdue,
     upcoming: upcoming.slice(0, 8),
     receivedPence: received,

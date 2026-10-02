@@ -42,26 +42,28 @@ const projectFields = {
 
 async function snapshot() {
   const { clients, projects } = await loadStudio();
-  const looseTasks = await db.studioTask.findMany({
+  const looseRows = await db.studioTask.findMany({
     where: { projectId: null },
     orderBy: { createdAt: "desc" },
   });
+  const looseTasks = looseRows.map((task) => ({
+    id: task.id,
+    projectId: null,
+    projectTitle: "",
+    title: task.title,
+    description: task.description,
+    status: task.status,
+    priority: task.priority,
+    dueDate: task.dueDate,
+    phase: task.phase,
+    sortOrder: task.sortOrder,
+    onTaskList: true,
+  }));
   return {
     clients,
     projects,
-    looseTasks: looseTasks.map((task) => ({
-      id: task.id,
-      projectId: null,
-      projectTitle: "",
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate,
-      phase: task.phase,
-      sortOrder: task.sortOrder,
-    })),
-    dashboard: buildDashboard(projects, clients.length),
+    looseTasks,
+    dashboard: buildDashboard(projects, clients.length, looseTasks),
     nudges: computeNudges(projects),
     openaiConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),
     actions: COPILOT_ACTIONS,
@@ -103,6 +105,7 @@ const createSchema = z.discriminatedUnion("entity", [
     priority: z.enum(TASK_PRIORITIES).optional(),
     dueDate: z.string().trim().max(40).optional(),
     phase: z.string().trim().max(80).optional(),
+    onTaskList: z.boolean().optional(),
   }),
   z.object({
     entity: z.literal("seed"),
@@ -214,6 +217,7 @@ export async function POST(request: Request) {
         dueDate: blank(body.dueDate),
         phase: blank(body.phase),
         sortOrder,
+        onTaskList: body.onTaskList ?? false,
       },
     });
     return NextResponse.json(await snapshot());
@@ -297,6 +301,7 @@ const patchSchema = z.discriminatedUnion("entity", [
     dueDate: z.string().trim().max(40).optional(),
     phase: z.string().trim().max(80).optional(),
     projectId: z.string().trim().min(1).nullable().optional(),
+    onTaskList: z.boolean().optional(),
   }),
 ]);
 
@@ -354,6 +359,7 @@ export async function PATCH(request: Request) {
         dueDate: body.dueDate,
         phase: body.phase,
         projectId: body.projectId,
+        onTaskList: body.onTaskList,
       },
     });
   }

@@ -123,6 +123,7 @@ export async function loadStudio() {
       dueDate: task.dueDate,
       phase: task.phase,
       sortOrder: task.sortOrder,
+      onTaskList: task.onTaskList,
     })),
   }));
 

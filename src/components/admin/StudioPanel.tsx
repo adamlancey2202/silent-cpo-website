@@ -285,6 +285,9 @@ function Projects({
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(() => (selected ? projectForm(selected) : emptyProject));
   const [taskTitle, setTaskTitle] = useState("");
+  const [pendingMoves, setPendingMoves] = useState<Record<string, string>>({});
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [overColumn, setOverColumn] = useState<string | null>(null);
 
   function startCreate() {
     setCreating(true);
@@ -345,12 +348,32 @@ function Projects({
   }
 
   async function moveTask(task: StudioTaskView, status: string) {
+    if (task.status === status && !pendingMoves[task.id]) return;
     onError("");
+    setPendingMoves((moves) => ({ ...moves, [task.id]: status }));
     try {
       await mutate("PATCH", { entity: "task", id: task.id, status });
     } catch (err) {
       onError(err instanceof Error ? err.message : "Could not move task");
+    } finally {
+      setPendingMoves(({ [task.id]: _done, ...rest }) => rest);
     }
+  }
+
+  async function toggleTaskList(task: StudioTaskView) {
+    onError("");
+    try {
+      await mutate("PATCH", { entity: "task", id: task.id, onTaskList: !task.onTaskList });
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Could not update task");
+    }
+  }
+
+  function dropOn(status: string) {
+    const task = selected?.tasks.find((item) => item.id === draggingId);
+    setDraggingId(null);
+    setOverColumn(null);
+    if (task) moveTask(task, status);
   }
 
   const showForm = creating || selected;
@@ -459,25 +482,80 @@ function Projects({
               <input className={input} value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="New task" />
               <button className={button} type="submit">ADD</button>
             </form>
+            <p className="text-[10px] text-mist/40">
+              Drag cards between columns. Tasks stay on this board until you add them to the Tasks tab.
+            </p>
             <div className="grid gap-3 md:grid-cols-4">
-              {TASK_STATUSES.map((column) => (
-                <div key={column.id} className="border border-mist/10 p-2">
-                  <p className="mb-2 text-[10px] tracking-wider text-gold">{column.label.toUpperCase()}</p>
-                  {selected.tasks.filter((task) => task.status === column.id).map((task) => (
-                    <div key={task.id} className="mb-2 border border-mist/10 p-2 text-xs">
-                      {task.phase && <p className="text-[10px] text-mist/40">{task.phase}</p>}
-                      <p className="text-bone">{task.title}</p>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {TASK_STATUSES.filter((item) => item.id !== task.status).map((item) => (
-                          <button key={item.id} type="button" className="text-[10px] text-mist/50 hover:text-gold" onClick={() => moveTask(task, item.id)}>
-                            {item.label}
+              {TASK_STATUSES.map((column) => {
+                const columnTasks = selected.tasks.filter(
+                  (task) => (pendingMoves[task.id] ?? task.status) === column.id,
+                );
+                return (
+                  <div
+                    key={column.id}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      if (overColumn !== column.id) setOverColumn(column.id);
+                    }}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOverColumn(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      dropOn(column.id);
+                    }}
+                    className={`min-h-[120px] border p-2 transition ${
+                      overColumn === column.id ? "border-gold/60 bg-gold/5" : "border-mist/10"
+                    }`}
+                  >
+                    <p className="mb-2 flex justify-between text-[10px] tracking-wider text-gold">
+                      <span>{column.label.toUpperCase()}</span>
+                      <span className="text-mist/40">{columnTasks.length}</span>
+                    </p>
+                    {columnTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", task.id);
+                          setDraggingId(task.id);
+                        }}
+                        onDragEnd={() => {
+                          setDraggingId(null);
+                          setOverColumn(null);
+                        }}
+                        className={`mb-2 cursor-grab border border-mist/10 bg-deep p-2 text-xs active:cursor-grabbing ${
+                          draggingId === task.id ? "opacity-40" : ""
+                        }`}
+                      >
+                        {task.phase && <p className="text-[10px] text-mist/40">{task.phase}</p>}
+                        <p className="text-bone">{task.title}</p>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <select
+                            aria-label="Move task"
+                            className="bg-transparent text-[10px] text-mist/50 outline-none md:hidden"
+                            value={pendingMoves[task.id] ?? task.status}
+                            onChange={(e) => moveTask(task, e.target.value)}
+                          >
+                            {TASK_STATUSES.map((item) => (
+                              <option key={item.id} value={item.id}>{item.label}</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            className={`ml-auto text-[10px] ${task.onTaskList ? "text-green" : "text-mist/50 hover:text-gold"}`}
+                            onClick={() => toggleTaskList(task)}
+                          >
+                            {task.onTaskList ? "On Tasks tab ✓" : "+ Tasks tab"}
                           </button>
-                        ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -564,7 +642,7 @@ function Tasks({
   mutate: (method: "POST" | "PATCH" | "DELETE", body?: unknown, query?: string) => Promise<unknown>;
 }) {
   const tasks = [
-    ...data.projects.flatMap((project) => project.tasks),
+    ...data.projects.flatMap((project) => project.tasks.filter((task) => task.onTaskList)),
     ...data.looseTasks,
   ];
   const [title, setTitle] = useState("");
@@ -582,6 +660,7 @@ function Tasks({
         projectId: projectId || null,
         priority,
         dueDate,
+        onTaskList: true,
       });
       setTitle("");
     } catch (err) {
@@ -603,20 +682,44 @@ function Tasks({
         <input className={input} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         <button className="bg-gold px-4 py-2 text-xs tracking-wider text-deep sm:col-span-4" type="submit">ADD TASK</button>
       </form>
-      {tasks.length === 0 && <p className="text-sm text-mist/60">No tasks yet.</p>}
+      {tasks.length === 0 && (
+        <p className="text-sm text-mist/60">
+          Nothing here yet. Add a task above, or use “+ Tasks tab” on a project board card.
+        </p>
+      )}
       {tasks.map((task) => (
         <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 border border-mist/10 px-4 py-3">
           <div>
             <p className="text-sm text-bone">{task.title}</p>
             <p className="text-xs text-mist/50">{task.projectTitle || "No project"}{task.dueDate ? ` · due ${task.dueDate}` : ""}</p>
           </div>
-          <select
-            className={input + " max-w-[160px]"}
-            value={task.status}
-            onChange={(e) => mutate("PATCH", { entity: "task", id: task.id, status: e.target.value }).catch((err) => onError(err.message))}
-          >
-            {TASK_STATUSES.map((status) => <option key={status.id} value={status.id}>{status.label}</option>)}
-          </select>
+          <div className="flex items-center gap-3">
+            <select
+              className={input + " max-w-[160px]"}
+              value={task.status}
+              onChange={(e) => mutate("PATCH", { entity: "task", id: task.id, status: e.target.value }).catch((err) => onError(err.message))}
+            >
+              {TASK_STATUSES.map((status) => <option key={status.id} value={status.id}>{status.label}</option>)}
+            </select>
+            {task.projectId ? (
+              <button
+                className="text-xs text-mist/40 hover:text-gold"
+                onClick={() => mutate("PATCH", { entity: "task", id: task.id, onTaskList: false }).catch((err) => onError(err.message))}
+              >
+                Back to project
+              </button>
+            ) : (
+              <button
+                className="text-xs text-mist/40 hover:text-red-400"
+                onClick={() => {
+                  if (!confirm(`Delete “${task.title}”?`)) return;
+                  mutate("DELETE", undefined, `?entity=task&id=${task.id}`).catch((err) => onError(err.message));
+                }}
+              >
+                Delete
+              </button>
+            )}
+          </div>
         </div>
       ))}
     </div>
