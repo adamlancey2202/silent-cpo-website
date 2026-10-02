@@ -26,6 +26,17 @@ type Filter = "new" | "sent" | "dismissed";
 const input =
   "w-full border border-mist/10 bg-deep px-3 py-2 text-sm text-bone outline-none focus:border-gold/40";
 const button = "border border-mist/10 px-3 py-2 text-xs tracking-wider text-mist/80 hover:text-bone disabled:opacity-50";
+const DESCRIPTION_LIMIT = 280;
+
+function listingDescription(excerpt: string) {
+  const text = excerpt
+    .replace(/^Budget:\s*\d[\d,]*(?:\.\d+)?(?:\s*-\s*\d[\d,]*(?:\.\d+)?)?\s*[A-Za-z]{2,5}\s*/i, "")
+    .trim();
+  if (text.length <= DESCRIPTION_LIMIT) return text;
+  const cut = text.slice(0, DESCRIPTION_LIMIT);
+  const at = cut.lastIndexOf(" ");
+  return `${(at > 180 ? cut.slice(0, at) : cut).trimEnd()}…`;
+}
 
 export function ProjectLeadsPanel({
   apiFetch,
@@ -203,7 +214,12 @@ export function ProjectLeadsPanel({
               </a>
             </div>
             {lead.excerpt && (
-              <p className="whitespace-pre-line text-sm leading-relaxed text-mist/70">{lead.excerpt}</p>
+              <p className="text-sm leading-relaxed text-mist/70">
+                {listingDescription(lead.excerpt)}{" "}
+                <a href={lead.url} target="_blank" rel="noreferrer" className="text-gold hover:underline">
+                  View online
+                </a>
+              </p>
             )}
             <label className="block text-[10px] tracking-wider text-mist/50">
               REPLY

@@ -6,6 +6,18 @@ const optionalEmail = z
   .max(200)
   .refine((value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), "Enter a valid email");
 
+function listingExcerpt(value: unknown) {
+  return typeof value === "string" ? value.trim().slice(0, 600) : "";
+}
+
+function listingBudget(value: unknown) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  const match = raw.match(
+    /^(?:Budget:\s*)?(\d[\d,]*(?:\.\d+)?\s*-\s*\d[\d,]*(?:\.\d+)?\s*[A-Za-z]{2,5})/i
+  );
+  return (match ? match[1] : raw).slice(0, 80);
+}
+
 export const projectPick = z
   .object({
     url: z
@@ -16,8 +28,8 @@ export const projectPick = z
       .refine((value) => value.startsWith("https://"), "Use an https URL"),
     title: z.string().trim().min(1).max(200),
     source: z.string().trim().min(1).max(80),
-    budget: z.string().trim().max(80).default(""),
-    excerpt: z.string().trim().max(4000).default(""),
+    budget: z.preprocess(listingBudget, z.string().max(80)),
+    excerpt: z.preprocess(listingExcerpt, z.string().max(600)),
   })
   .strict();
 

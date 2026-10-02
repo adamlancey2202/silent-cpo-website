@@ -1,31 +1,31 @@
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { apiError, json, readBody } from "@/lib/content/http";
+import { projects } from "@/lib/projects";
 import { draftLeadInput } from "@/lib/project-leads";
 
-function bidWebhookUrl(): string | null {
-  const raw = process.env.N8N_DRAFT_WEBHOOK_URL?.trim();
-  if (!raw) return null;
-  try {
-    const url = new URL(raw);
-    if (url.protocol !== "https:") return null;
-    url.pathname = url.pathname.replace(/[^/]*$/, "bid-draft");
-    url.search = "";
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
+const portfolio = projects
+  .map((project) => {
+    const link = "url" in project && project.url ? ` (${project.url})` : "";
+    return `${project.name}${link} [${project.category}] - ${project.description}`;
+  })
+  .join("\n");
+
+const system = [
+  "You draft a Freelancer bid for SilentCPO, a UK product studio run by a Chief Product Officer who also builds.",
+  "SilentCPO designs and builds websites, Shopify themes, booking systems, web apps, PWAs, mobile apps, membership platforms, bespoke software and AI/n8n automation.",
+  "The bid is written by a person who will build the project himself with an AI coding assistant, so delivery is fast. Reflect that speed in the timeline and the price.",
+  "Price in GBP for the work described, as a single figure or a tight range, and say what it covers. Keep it competitive for a fast solo build: a simple site is a few hundred pounds, a web app with payments and accounts is low thousands, and only genuinely large builds go higher. Never invent a client budget.",
+  "Timeline is working days. State the total and what the first milestone delivers.",
+  "The CPO edge shows as foresight, not questions: name the one thing that usually derails this kind of project and say it is handled in the first milestone.",
+  "Only cite portfolio work from the list given, and only when it is genuinely relevant. Never invent ratings, reviews, clients, results or years of experience.",
+  "British English. Return JSON only.",
+].join(" ");
 
 export async function POST(request: Request) {
   if (!(await requireAdmin())) return json({ error: "Unauthorized" }, 401);
-  const webhook = bidWebhookUrl();
-  if (!webhook) {
-    return json(
-      { error: "Draft webhook is not configured. Set N8N_DRAFT_WEBHOOK_URL on the server." },
-      503
-    );
-  }
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) return json({ error: "Add OPENAI_API_KEY on the server to draft replies." }, 503);
 
   try {
     const parsed = draftLeadInput.safeParse(await readBody(request));
@@ -38,30 +38,53 @@ export async function POST(request: Request) {
     const lead = await db.projectLead.findUnique({ where: { id: parsed.data.id } });
     if (!lead) return json({ error: "Listing not found." }, 404);
 
-    const response = await fetch(webhook, {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        title: lead.title,
-        source: lead.source,
-        budget: lead.budget,
-        excerpt: lead.excerpt,
+        model: process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini",
+        temperature: 0.4,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              'Return JSON: { "quote": "£X-£Y, covering ...", "timeline": "N working days. First milestone: ...", "reply": "..." }.',
+              "reply is 120-180 words of plain text with line breaks, in this order:",
+              "1. One opening line restating what they want and saying plainly that you can build it.",
+              "2. A concrete plan of 3-4 lines: what you build first, what follows, and the stack only where it matters to them.",
+              "3. One sentence naming the thing that usually derails this type of project and how the first milestone handles it. State it as something you take care of.",
+              "4. The quote and the timeline, in one line.",
+              "5. One line naming a relevant portfolio project, with its URL if one is listed. Skip if nothing fits.",
+              "6. One or two practical questions that help confirm the quote, such as existing assets, integrations or a deadline.",
+              "7. A close offering to start on the first milestone.",
+              'Banned: "I noticed", "Have you considered", "I hope you are doing well", "Let\'s connect to explore", "perfect fit", unsolicited "discovery phase" pitches, and mentioning being new.',
+              "",
+              "## SilentCPO portfolio (cite only these)",
+              portfolio,
+              "",
+              "## Listing",
+              `Title: ${lead.title}`,
+              `Source: ${lead.source}`,
+              lead.budget ? `Budget stated by client: ${lead.budget}` : "Budget: not stated",
+              lead.excerpt,
+            ].join("\n"),
+          },
+        ],
       }),
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(45_000),
     });
-    const text = await response.text();
-    if (!response.ok) {
-      return json({ error: `The draft workflow returned ${response.status}.` }, 502);
-    }
 
+    if (!response.ok) {
+      return json({ error: `OpenAI request failed (${response.status}).` }, 502);
+    }
+    const payload = (await response.json()) as { choices?: { message?: { content?: string } }[] };
     let draft: { quote?: unknown; timeline?: unknown; reply?: unknown };
     try {
-      draft = JSON.parse(text);
+      draft = JSON.parse(payload.choices?.[0]?.message?.content ?? "");
     } catch {
-      return json(
-        { error: "The bid draft workflow is not imported in n8n yet. Import infra/n8n/workflows/bid-draft.json and attach the OpenAI credential." },
-        502
-      );
+      return json({ error: "The draft came back in an unexpected format. Try again." }, 502);
     }
     const quote = String(draft.quote ?? "").trim().slice(0, 300);
     const timeline = String(draft.timeline ?? "").trim().slice(0, 300);
@@ -75,7 +98,7 @@ export async function POST(request: Request) {
     return json(saved);
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
-      return json({ error: "n8n did not respond in time. Render may be waking up — try again in a minute." }, 504);
+      return json({ error: "OpenAI did not respond in time. Try again." }, 504);
     }
     return apiError(error);
   }
