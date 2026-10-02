@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { calculateRevenue } from "@/lib/revenue";
+import { loadStudio } from "@/lib/studio-copilot";
+import { buildDashboard } from "@/lib/studio";
 import { syncPaymentStatuses } from "@/lib/stripe-sync";
 
 export async function GET() {
@@ -29,7 +30,14 @@ export async function GET() {
     }),
   ]);
 
-  const revenue = calculateRevenue({ invoices, paymentLinks });
+  const { projects } = await loadStudio();
+  const projectTotals = buildDashboard(projects, 0);
+  const revenue = {
+    currency: "gbp",
+    received: projectTotals.receivedPence,
+    pipeline: projectTotals.pipelinePence,
+    total: projectTotals.receivedPence + projectTotals.pipelinePence,
+  };
 
   return NextResponse.json({
     revenue,

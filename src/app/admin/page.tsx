@@ -73,12 +73,6 @@ interface Revenue {
   received: number;
   pipeline: number;
   total: number;
-  breakdown: {
-    receivedInvoices: number;
-    receivedLinks: number;
-    pipelineInvoices: number;
-    pipelineLinks: number;
-  };
 }
 
 function statusColor(status: string) {
@@ -298,7 +292,6 @@ export default function AdminPage() {
               pipeline={revenue.pipeline}
               total={revenue.total}
               currency={revenue.currency}
-              breakdown={revenue.breakdown}
             />
           </div>
         )}
@@ -386,17 +379,18 @@ export default function AdminPage() {
               </h3>
               <div className="grid gap-4 text-xs text-mist/60 sm:grid-cols-3">
                 <p>
-                  <strong className="text-bone">Received</strong> — Stripe
-                  invoices marked paid + payment links with completed checkout.
+                  <strong className="text-bone">Received</strong> — cash already
+                  recorded on Projects: paid jobs, plus installments received on
+                  work still in progress.
                 </p>
                 <p>
-                  <strong className="text-bone">Pipeline</strong> — Open/draft
-                  invoices and active payment links awaiting payment.
+                  <strong className="text-bone">Pipeline</strong> — the outstanding
+                  balance on enquiry, quoted, in progress, and waiting money deals.
                 </p>
                 <p>
-                  <strong className="text-bone">Projects</strong> — Client work,
-                  kanban, and the copilot live on the Projects tab. Those totals
-                  are separate from Stripe.
+                  <strong className="text-bone">Not included</strong> — vouchers
+                  and in-kind deals. Stripe invoices and payment links stay on the
+                  Stripe tab.
                 </p>
               </div>
             </section>

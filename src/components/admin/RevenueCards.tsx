@@ -24,7 +24,7 @@ export function RevenueCards({
     {
       label: "Total Revenue",
       value: total,
-      sub: "Received + pipeline (Stripe)",
+      sub: "Received + pipeline from Projects",
       accent: "text-bone",
       border: "border-gold/30",
     },
@@ -33,7 +33,7 @@ export function RevenueCards({
       value: pipeline,
       sub: breakdown
         ? `Invoices ${formatMoney(breakdown.pipelineInvoices, currency)} · Links ${formatMoney(breakdown.pipelineLinks, currency)}`
-        : "Outstanding invoices & payment links",
+        : "Still to collect on active money deals",
       accent: "text-green",
       border: "border-green/30",
     },
@@ -42,7 +42,7 @@ export function RevenueCards({
       value: received,
       sub: breakdown
         ? `Invoices ${formatMoney(breakdown.receivedInvoices, currency)} · Links ${formatMoney(breakdown.receivedLinks, currency)}`
-        : "Paid & in the bank",
+        : "Paid projects and installments received",
       accent: "text-gold",
       border: "border-gold/20",
     },
