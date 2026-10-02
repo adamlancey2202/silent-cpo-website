@@ -12,7 +12,7 @@ export async function GET() {
 
   await syncPaymentStatuses();
 
-  const [paymentLinks, invoices, contacts, openEnquiries, subscribers] = await Promise.all([
+  const [paymentLinks, invoices, contacts, openEnquiries, subscribers, newLeads] = await Promise.all([
     db.paymentLink.findMany({ orderBy: { createdAt: "desc" } }),
     db.invoice.findMany({ orderBy: { createdAt: "desc" } }),
     db.contact.findMany({ orderBy: { createdAt: "desc" } }),
@@ -28,6 +28,7 @@ export async function GET() {
         createdAt: true,
       },
     }),
+    db.projectLead.count({ where: { status: "new" } }),
   ]);
 
   const { projects } = await loadStudio();
@@ -48,6 +49,7 @@ export async function GET() {
     counts: {
       contacts: contacts.length,
       openEnquiries,
+      newLeads,
     },
   });
 }

@@ -1,0 +1,260 @@
+{
+  "name": "SilentCPO \u2014 project finder",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "project-finder",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook (daily)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        120
+      ],
+      "webhookId": "project-finder"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "site",
+              "name": "siteBaseUrl",
+              "value": "https://www.silentcpo.me",
+              "type": "string"
+            },
+            {
+              "id": "model",
+              "name": "openAiModel",
+              "value": "gpt-4o-mini",
+              "type": "string"
+            },
+            {
+              "id": "min",
+              "name": "minScore",
+              "value": 7,
+              "type": "number"
+            },
+            {
+              "id": "max",
+              "name": "maxListings",
+              "value": 18,
+              "type": "number"
+            },
+            {
+              "id": "fln",
+              "name": "freelancerToken",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "config",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.first().json;\nconst errors = [];\nconst ua = 'SilentCPO-ProjectFinder/1.0 (hello@silentcpo.me)';\nconst httpRequest = this.helpers.httpRequest.bind(this.helpers);\n\nfunction strip(html) {\n  return String(html || '')\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')\n    .replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g, '$1')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#0?39;/g, \"'\")\n    .replace(/&#x2F;/gi, '/')\n    .replace(/&nbsp;/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction unpack(response) {\n  if (response == null || response === '') return { statusCode: 0, body: null };\n  if (typeof response === 'string') {\n    const trimmed = response.trim();\n    if (!trimmed) return { statusCode: 0, body: null };\n    try { return { statusCode: 200, body: JSON.parse(trimmed) }; }\n    catch { return { statusCode: 200, body: trimmed }; }\n  }\n  if (typeof response !== 'object') return { statusCode: 200, body: response };\n  if (('statusCode' in response) && ('body' in response || 'data' in response)) {\n    let body = response.body != null ? response.body : response.data;\n    if (typeof body === 'string') {\n      try { body = JSON.parse(body); } catch { /* keep text */ }\n    }\n    return { statusCode: Number(response.statusCode) || 0, body };\n  }\n  return { statusCode: 200, body: response };\n}\n\nfunction shapeOf(body) {\n  if (body == null) return 'empty';\n  if (typeof body === 'string') return 'text:' + body.slice(0, 80).replace(/\\s+/g, ' ');\n  if (Array.isArray(body)) return 'array:' + body.length;\n  if (typeof body === 'object') return 'keys:' + Object.keys(body).slice(0, 8).join(',');\n  return typeof body;\n}\n\nasync function fetchJson(url, headers = {}) {\n  const label = url.split('?')[0].replace('https://', '');\n  if (typeof fetch === 'function') {\n    try {\n      const res = await fetch(url, {\n        headers: { 'User-Agent': ua, Accept: 'application/json', ...headers },\n      });\n      const text = await res.text();\n      if (!res.ok) {\n        errors.push(label + ': ' + res.status + ' ' + text.slice(0, 140).replace(/\\s+/g, ' '));\n        return null;\n      }\n      try {\n        return JSON.parse(text);\n      } catch {\n        errors.push(label + ': not json ' + text.slice(0, 80).replace(/\\s+/g, ' '));\n        return null;\n      }\n    } catch (error) {\n      const message = error.message || String(error);\n      if (!/fetch is not defined|fetch is not a function/i.test(message)) {\n        errors.push(label + ': ' + message);\n        return null;\n      }\n    }\n  }\n  try {\n    const response = await httpRequest({\n      method: 'GET',\n      url,\n      timeout: 20000,\n      json: true,\n      headers: { 'User-Agent': ua, Accept: 'application/json', ...headers },\n    });\n    const unpacked = unpack(response);\n    if (unpacked.body == null || unpacked.body === '') {\n      errors.push(label + ': empty (' + shapeOf(response) + ')');\n      return null;\n    }\n    if (unpacked.statusCode >= 400) {\n      const message = unpacked.body.message || unpacked.body.error || unpacked.body.status || unpacked.statusCode;\n      errors.push(label + ': ' + unpacked.statusCode + ' ' + message);\n      return null;\n    }\n    return unpacked.body;\n  } catch (error) {\n    errors.push(label + ': ' + (error.message || String(error)));\n    return null;\n  }\n}\n\nfunction parseAtom(xml) {\n  return String(xml).split('<entry>').slice(1).map((chunk) => {\n    const title = strip((chunk.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/) || [])[1] || '');\n    const href = (chunk.match(/<link[^>]*href=\"([^\"]+)\"/) || [])[1] || '';\n    const updated = (chunk.match(/<updated>([^<]+)<\\/updated>/) || [])[1] || '';\n    const content = strip((chunk.match(/<content[^>]*>([\\s\\S]*?)<\\/content>/) || [])[1] || '');\n    return { title, href, updated, content };\n  }).filter((entry) => entry.title && entry.href);\n}\n\nconst listings = [];\nconst seen = new Set();\nfunction cleanUrl(value) {\n  let raw = String(value || '').trim().split('#')[0];\n  if (!raw.startsWith('https://')) return '';\n  const q = raw.indexOf('?');\n  const base = (q === -1 ? raw : raw.slice(0, q)).replace(/\\/$/, '');\n  if (q === -1) return base;\n  const kept = raw.slice(q + 1).split('&').filter((part) => {\n    const key = part.split('=')[0];\n    return key && key.slice(0, 4) !== 'utm_' && key !== 'ref';\n  });\n  return kept.length ? base + '?' + kept.join('&') : base;\n}\n\nfunction add(item) {\n  const url = cleanUrl(item.url);\n  if (!url || seen.has(url)) return;\n  seen.add(url);\n  listings.push({\n    source: item.source,\n    title: String(item.title || '').slice(0, 180),\n    url,\n    createdAt: item.createdAt || '',\n    text: String(item.text || '').slice(0, 900),\n  });\n}\n\nconst buildish = /website|web ?app|shopify|wordpress|developer|software|mobile app|\\bapp\\b|automation|react|next\\.?js|booking|membership|\\bsaas\\b|\\bmvp\\b|full[- ]stack|frontend|backend|\\bapi\\b|\\bpwa\\b|e-?commerce/i;\nconst junk = /virtual assistant|voice recording|\\bsales\\b|3d print|rule34|onlyfans|crypto|forex|sports data|get paid to talk/i;\nconst freelancerToken = String(config.freelancerToken || '').trim();\nconst freelancerHeaders = freelancerToken ? { 'Freelancer-OAuth-V1': freelancerToken } : {};\nconst data = await fetchJson(\n  'https://www.freelancer.com/api/projects/0.1/projects/active/?limit=12&compact=true&query=' + encodeURIComponent('website'),\n  freelancerHeaders\n);\nconst projectList = Array.isArray(data?.result?.projects)\n  ? data.result.projects\n  : Array.isArray(data?.projects) ? data.projects : [];\nif (!projectList.length) {\n  errors.push('Freelancer: ' + shapeOf(data));\n} else if (typeof projectList[0] !== 'object' || projectList[0] == null) {\n  errors.push('Freelancer rows were ids, first=' + String(projectList[0]));\n} else {\n  let skipped = 0;\n  for (const project of projectList) {\n    const title = String(project.title || '').trim();\n    const slug = String(project.seo_url || project.seoUrl || '').replace(/^\\//, '');\n    const id = project.id ? String(project.id) : '';\n    if (!title || (!slug && !id)) {\n      skipped += 1;\n      continue;\n    }\n    const minimum = project.budget?.minimum;\n    const maximum = project.budget?.maximum;\n    const currency = project.currency?.code || '';\n    const budget = minimum != null && maximum != null ? String(minimum) + '-' + String(maximum) + ' ' + currency : '';\n    const text = strip(project.preview_description || project.description || '');\n    add({\n      source: 'Freelancer',\n      title,\n      url: 'https://www.freelancer.com/projects/' + (slug || id),\n      createdAt: project.time_submitted ? new Date(Number(project.time_submitted) * 1000).toISOString() : '',\n      text: [budget ? 'Budget: ' + budget.trim() : '', text].filter(Boolean).join(' '),\n    });\n  }\n  if (!listings.length) errors.push('Freelancer skipped ' + skipped + ' rows, keys ' + Object.keys(projectList[0] || {}).slice(0, 8).join(','));\n}\n\nconst stories = await fetchJson(\n  'https://hn.algolia.com/api/v1/search_by_date?query=' + encodeURIComponent('Ask HN: Freelancer? Seeking freelancer?') + '&tags=story&hitsPerPage=1'\n);\nconst story = stories?.hits?.[0];\nif (story?.objectID) {\n  const comments = await fetchJson(\n    'https://hn.algolia.com/api/v1/search_by_date?tags=comment,story_' + story.objectID + '&hitsPerPage=80'\n  );\n  for (const hit of comments?.hits || []) {\n    const text = strip(hit.comment_text);\n    if (!/^seeking freelancer\\b/i.test(text)) continue;\n    add({\n      source: 'Hacker News',\n      title: text.slice(0, 140),\n      url: 'https://news.ycombinator.com/item?id=' + hit.objectID,\n      createdAt: hit.created_at || '',\n      text,\n    });\n  }\n}\n\nconst github = await fetchJson(\n  'https://api.github.com/search/issues?q=' + encodeURIComponent('is:issue is:open label:bounty -repo:claude-builders-bounty/claude-builders-bounty -repo:Scottcjn/rustchain-bounties') + '&sort=updated&per_page=8',\n  { Accept: 'application/vnd.github+json' }\n);\nconst githubItems = github?.items || github?.body?.items || [];\nif (!githubItems.length) errors.push('GitHub: ' + (github?.message || shapeOf(github)));\nfor (const issue of githubItems) {\n  const title = issue.title || '';\n  const body = strip(issue.body || '');\n  if (/star our|upvote|follow us|clawhub|youtube|badge to|honest review/i.test(title + ' ' + body)) continue;\n  if (listings.filter((item) => item.source === 'GitHub bounty').length >= 6) break;\n  add({\n    source: 'GitHub bounty',\n    title,\n    url: issue.html_url,\n    createdAt: issue.updated_at || issue.created_at || '',\n    text: body,\n  });\n}\n\nif (!listings.length) {\n  throw new Error('PROJECT_FINDER: no listings. ' + (errors.join(' | ') || 'Sources returned nothing.'));\n}\n\nconst maxListings = Math.min(24, Math.max(5, Number(config.maxListings) || 18));\nreturn [{\n  json: {\n    siteBaseUrl: String(config.siteBaseUrl || 'https://silentcpo.me').replace(/\\/$/, ''),\n    openAiModel: config.openAiModel || 'gpt-4o-mini',\n    minScore: Number(config.minScore) || 7,\n    collectedAt: new Date().toISOString(),\n    sourceErrors: errors,\n    considered: listings.length,\n    listings: listings.slice(0, maxListings),\n  },\n}];\n"
+      },
+      "id": "collect",
+      "name": "Collect listings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst listings = row.listings || [];\nconst block = listings.map((item, index) => [\n  '[' + (index + 1) + '] ' + item.source,\n  item.title,\n  item.url,\n  item.createdAt,\n  item.text,\n].join('\\n')).join('\\n\\n---\\n\\n');\n\nconst system = [\n  'You shortlist paid client projects for SilentCPO, a UK product studio led by a Chief Product Officer, not a commodity development shop.',\n  'SilentCPO designs and builds websites, Shopify themes, booking systems, web apps, PWAs, native apps, membership platforms, calculators, bespoke software, and AI/n8n automation.',\n  'The advantage is product leadership: uncover the business outcome and user need, challenge assumptions tactfully, expose missing scope and delivery risks, decide what should be built first, and then deliver it.',\n  'Prefer briefs where discovery, product judgement, prioritisation, UX thinking, or reducing ambiguity creates an advantage. Deprioritise tightly specified low-price implementation tasks where ratings and price are the only differentiators.',\n  'SilentCPO is new on Freelancer, so proposals must win through relevance and insight, never by claiming ratings, platform history, clients, results, or credentials not present in the listing.',\n  'Drop people offering their own services, full-time jobs, unpaid work, homework, crypto, \"star this repo\" tasks, and anything outside the service list.',\n  'Never invent a budget, client, URL, email, portfolio result, or technical fact. contactEmail is copied from the listing or an empty string. Quote a budget only when stated.',\n  'British English. Return JSON only.',\n].join(' ');\n\nconst user = [\n  'From the listings below, return JSON: { \"picks\": [ { \"url\", \"title\", \"source\", \"score\" (integer 1-10), \"budget\", \"why\", \"replyAngle\", \"contactEmail\" } ] }.',\n  'Include only projects worth pursuing. Score 9-10 for a strong service fit where CPO-level thinking creates an edge; 7-8 for a plausible fit with a scope or budget gap. Omit everything below 7.',\n  'why: one sentence explaining the product-strategy advantage, not merely the technology match.',\n  'replyAngle: write a tailored 80-140 word proposal draft. Open with one specific observation about their brief. Reframe or challenge one assumption tactfully when useful. Ask one sharp question about the user, business outcome, evidence, or constraint. Suggest a low-risk first step such as a short discovery/scoping phase before committing to the whole build. End with a simple invitation to talk. Do not mention being new, ratings, or generic claims such as \"I am the perfect fit\". Do not race to the lowest price.',\n  'If the brief is too thin to personalise honestly, omit it. If none qualify, return { \"picks\": [] }.',\n  '',\n  block,\n].join('\\n');\n\nreturn [{\n  json: {\n    ...row,\n    openAiBody: {\n      model: row.openAiModel,\n      response_format: { type: 'json_object' },\n      temperature: 0.2,\n      max_tokens: 2500,\n      messages: [\n        { role: 'system', content: system },\n        { role: 'user', content: user },\n      ],\n    },\n  },\n}];\n"
+      },
+      "id": "build-prompt",
+      "name": "Build scoring prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.openAiBody }}",
+        "options": {}
+      },
+      "id": "openai",
+      "name": "OpenAI score projects",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        220
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_OPENAI",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const api = $input.first().json;\nconst meta = $('Build scoring prompt').first().json;\nconst content = api.choices?.[0]?.message?.content;\nif (!content) throw new Error('OpenAI: empty project shortlist');\n\nlet parsed;\ntry {\n  parsed = JSON.parse(content);\n} catch {\n  throw new Error('OpenAI: shortlist was not valid JSON');\n}\n\nfunction cleanUrl(value) {\n  let raw = String(value || '').trim().split('#')[0];\n  if (!raw.startsWith('https://')) return '';\n  const q = raw.indexOf('?');\n  const base = (q === -1 ? raw : raw.slice(0, q)).replace(/\\/$/, '');\n  if (q === -1) return base;\n  const kept = raw.slice(q + 1).split('&').filter((part) => {\n    const key = part.split('=')[0];\n    return key && key.slice(0, 4) !== 'utm_' && key !== 'ref';\n  });\n  return kept.length ? base + '?' + kept.join('&') : base;\n}\n\nconst allowed = new Map((meta.listings || []).map((item) => [cleanUrl(item.url), item]));\nconst minScore = Number(meta.minScore) || 7;\nconst picks = (Array.isArray(parsed.picks) ? parsed.picks : [])\n  .map((pick) => {\n    const url = cleanUrl(pick.url);\n    const source = allowed.get(url);\n    if (!source) return null;\n    const score = Math.round(Number(pick.score));\n    if (!Number.isFinite(score) || score < minScore) return null;\n    const email = String(pick.contactEmail || '').trim();\n    return {\n      url,\n      title: String(pick.title || source.title).slice(0, 180),\n      source: String(source.source || '').slice(0, 80),\n      score,\n      budget: String(pick.budget || '').trim().slice(0, 80),\n      why: String(pick.why || '').trim().slice(0, 500),\n      replyAngle: String(pick.replyAngle || '').trim().slice(0, 2000),\n      contactEmail: /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ? email.slice(0, 200) : '',\n      excerpt: String(source.text || '').slice(0, 2000),\n    };\n  })\n  .filter(Boolean)\n  .sort((a, b) => b.score - a.score);\n\nreturn [{\n  json: {\n    siteBaseUrl: String(meta.siteBaseUrl || 'https://silentcpo.me').replace(/\\/$/, ''),\n    considered: picks.length,\n    saveBody: { picks },\n  },\n}];\n"
+      },
+      "id": "parse",
+      "name": "Parse shortlist",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.siteBaseUrl }}/api/automation/projects",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.saveBody }}",
+        "options": {}
+      },
+      "id": "save-leads",
+      "name": "Save to admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        220
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_SILENTCPO",
+          "name": "SilentCPO Content API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook (daily)": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Collect listings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect listings": {
+      "main": [
+        [
+          {
+            "node": "Build scoring prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build scoring prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI score projects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI score projects": {
+      "main": [
+        [
+          {
+            "node": "Parse shortlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse shortlist": {
+      "main": [
+        [
+          {
+            "node": "Save to admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

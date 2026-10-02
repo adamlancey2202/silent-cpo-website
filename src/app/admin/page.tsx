@@ -13,15 +13,17 @@ import {
   BarChart3,
   Kanban,
   Newspaper,
+  Inbox,
 } from "lucide-react";
 import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { ContentPanel } from "@/components/admin/ContentPanel";
 import { PlatformPanel } from "@/components/admin/PlatformPanel";
 import { StudioPanel } from "@/components/admin/StudioPanel";
+import { ProjectLeadsPanel } from "@/components/admin/ProjectLeadsPanel";
 import { RevenueCards } from "@/components/admin/RevenueCards";
 import { formatMoney } from "@/lib/revenue";
 
-type Tab = "overview" | "contacts" | "newsletter" | "payments" | "platform" | "content" | "analytics" | "projects";
+type Tab = "overview" | "contacts" | "newsletter" | "payments" | "platform" | "content" | "analytics" | "projects" | "leads";
 
 interface Contact {
   id: string;
@@ -101,7 +103,7 @@ export default function AdminPage() {
   const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [revenue, setRevenue] = useState<Revenue | null>(null);
-  const [counts, setCounts] = useState({ contacts: 0, openEnquiries: 0 });
+  const [counts, setCounts] = useState({ contacts: 0, openEnquiries: 0, newLeads: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -248,6 +250,7 @@ export default function AdminPage() {
     { id: "contacts", label: "Enquiries", icon: Mail },
     { id: "newsletter", label: "Newsletter", icon: Newspaper },
     { id: "payments", label: "Stripe", icon: CreditCard },
+    { id: "leads", label: "Leads", icon: Inbox },
     { id: "projects", label: "Projects", icon: Kanban },
     { id: "content", label: "Content", icon: FileText },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
@@ -312,6 +315,11 @@ export default function AdminPage() {
               {id === "contacts" && counts.openEnquiries > 0 && (
                 <span className="ml-1 rounded-full bg-green/20 px-1.5 text-[10px] text-green">
                   {counts.openEnquiries}
+                </span>
+              )}
+              {id === "leads" && counts.newLeads > 0 && (
+                <span className="ml-1 rounded-full bg-green/20 px-1.5 text-[10px] text-green">
+                  {counts.newLeads}
                 </span>
               )}
             </button>
@@ -468,6 +476,13 @@ export default function AdminPage() {
               ))
             )}
           </div>
+        )}
+
+        {tab === "leads" && (
+          <ProjectLeadsPanel
+            apiFetch={apiFetch}
+            onNewCount={(count) => setCounts((current) => ({ ...current, newLeads: count }))}
+          />
         )}
 
         {tab === "projects" && <StudioPanel apiFetch={apiFetch} />}

@@ -225,3 +225,46 @@ export async function sendNewsletterSignupEmails(
     return { ok: false, error: message };
   }
 }
+
+export async function sendProjectReply(data: {
+  to: string;
+  title: string;
+  reply: string;
+  listingUrl: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!isMailerSendConfigured()) {
+    return { ok: false, error: "MailerSend not configured" };
+  }
+
+  const fromEmail = process.env.MAILERSEND_FROM_EMAIL!.trim();
+  const owner = notifyEmail();
+  const subject = data.title.slice(0, 80);
+  const text = [data.reply, "", listingLine(data.listingUrl)].join("\n");
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:560px;color:#111;font-size:15px;line-height:1.6">
+      ${escapeHtml(data.reply).replace(/\n/g, "<br>")}
+      <p style="margin:24px 0 0;font-size:12px;color:#6b7280">${escapeHtml(listingLine(data.listingUrl))}</p>
+    </div>
+  `.trim();
+
+  try {
+    await mailer().email.send(
+      new EmailParams()
+        .setFrom(new Sender(fromEmail, fromName()))
+        .setTo([new Recipient(data.to)])
+        .setReplyTo(new Recipient(owner, fromName()))
+        .setSubject(subject)
+        .setHtml(html)
+        .setText(text)
+    );
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "MailerSend send failed";
+    console.error("[MailerSend] project reply failed:", message);
+    return { ok: false, error: message };
+  }
+}
+
+function listingLine(url: string): string {
+  return `Listing: ${url}`;
+}
