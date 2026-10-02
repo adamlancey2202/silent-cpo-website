@@ -62,8 +62,8 @@ export async function POST(request: Request) {
     }
     const lead = await db.projectLead.findUnique({ where: { id: parsed.data.id } });
     if (!lead) return json({ error: "Listing not found." }, 404);
-    const fullBrief = await freelancerBrief(lead.url);
-    const excerpt = fullBrief.length > lead.excerpt.length ? fullBrief : lead.excerpt;
+    const listing = await freelancerBrief(lead.url);
+    const excerpt = listing.text.length > lead.excerpt.length ? listing.text : lead.excerpt;
     if (excerpt !== lead.excerpt) {
       await db.projectLead.update({ where: { id: lead.id }, data: { excerpt } });
     } else if (lead.url.includes("freelancer.com") && excerpt.length < 400) {
@@ -84,8 +84,9 @@ export async function POST(request: Request) {
           {
             role: "user",
             content: [
-              'Return JSON: { "quote": "£X-£Y, covering ...", "timeline": "N working days. First milestone: ...", "reply": "..." }.',
-              "reply is 140-190 words of plain text with line breaks, in this order:",
+              'Return JSON: { "bidAmount": 2800, "bidCurrency": "AUD", "deliveryDays": 14, "milestone": "Short milestone name", "reply": "..." }.',
+              "bidAmount is one number in the client's currency, inside their maximum when they gave one, competitive but not the cheapest. bidCurrency is the client's 3-letter currency code. deliveryDays is calendar days for the scoped first version, realistic for a fast solo build. milestone is under 80 characters.",
+              "reply is the proposal pasted into Freelancer. It must be at least 100 characters and 140-190 words, in this order:",
               "1. One opening line: you can build what they described, and you will shape the product as well as build it. Say Chief Product Officer in ordinary words, once.",
               "2. A concrete plan of 3-4 lines naming at least two actual features or constraints from the listing, in their words, and the relevant skills or stack used to deliver them. Cover every central user outcome in the brief, not just the easiest feature.",
               "3. One product decision for the first version, taken from their brief. Keep every central user outcome, but narrow the initial rules, audience, data source, integrations, content, or admin tooling where needed. Say what you will constrain or make safe and that this is included in the first milestone. Do not ask them to solve it.",
@@ -101,7 +102,11 @@ export async function POST(request: Request) {
               "## Listing",
               `Title: ${lead.title}`,
               `Source: ${lead.source}`,
-              budget ? `Budget stated by client, in GBP: ${budget}` : "Budget: not stated",
+              listing.budget
+                ? `Client budget on Freelancer: ${listing.budget}. Bid in this currency.`
+                : budget
+                  ? `Budget converted to GBP: ${budget}`
+                  : "Budget: not stated",
               excerpt,
             ].join("\n"),
           },
@@ -114,14 +119,18 @@ export async function POST(request: Request) {
       return json({ error: `OpenAI request failed (${response.status}).` }, 502);
     }
     const payload = (await response.json()) as { choices?: { message?: { content?: string } }[] };
-    let draft: { quote?: unknown; timeline?: unknown; reply?: unknown };
+    let draft: { bidAmount?: unknown; bidCurrency?: unknown; deliveryDays?: unknown; milestone?: unknown; reply?: unknown };
     try {
       draft = JSON.parse(payload.choices?.[0]?.message?.content ?? "");
     } catch {
       return json({ error: "The draft came back in an unexpected format. Try again." }, 502);
     }
-    const quote = String(draft.quote ?? "").trim().slice(0, 300);
-    const timeline = String(draft.timeline ?? "").trim().slice(0, 300);
+    const amount = Math.round(Number(draft.bidAmount));
+    const days = Math.round(Number(draft.deliveryDays));
+    const currency = String(draft.bidCurrency || "").trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
+    const milestone = String(draft.milestone || "First milestone").trim().slice(0, 80);
+    const quote = Number.isFinite(amount) && currency ? `${currency} ${amount.toLocaleString("en-GB")}` : "";
+    const timeline = Number.isFinite(days) && days > 0 ? `${days} days · ${milestone}` : milestone;
     const reply = String(draft.reply ?? "").trim().slice(0, 5000);
     if (!reply) return json({ error: "The draft came back empty. Try again." }, 502);
 

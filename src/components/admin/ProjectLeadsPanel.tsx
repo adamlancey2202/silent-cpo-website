@@ -245,11 +245,13 @@ export function ProjectLeadsPanel({
               <>
                 {(lead.quote || lead.timeline) && (
                   <p className="text-xs text-gold">
-                    {[lead.quote && `Quote ${lead.quote}`, lead.timeline].filter(Boolean).join(" · ")}
+                    {[lead.quote && `Bid amount ${lead.quote}`, lead.timeline && `Delivered in ${lead.timeline}`]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 )}
                 <label className="block text-[10px] tracking-wider text-mist/50">
-                  REPLY
+                  PROPOSAL · {draft.reply.trim().length} CHARACTERS
                   <textarea
                     value={draft.reply}
                     onChange={(event) =>
@@ -277,6 +279,7 @@ export function ProjectLeadsPanel({
                   />
                 </label>
                 <p className="text-[10px] text-mist/40">
+                  Paste the bid amount, days, milestone and proposal into Freelancer. The proposal box needs at least 100 characters.
                   Most posts do not include an email. Open the listing, copy one if it is there, then send.
                   {lead.sentAt ? ` Sent ${new Date(lead.sentAt).toLocaleString("en-GB")}.` : ""}
                 </p>

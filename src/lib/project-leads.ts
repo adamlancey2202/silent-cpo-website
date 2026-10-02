@@ -10,16 +10,17 @@ function listingExcerpt(value: unknown) {
   return typeof value === "string" ? value.trim().slice(0, 12000) : "";
 }
 
-export async function freelancerBrief(url: string): Promise<string> {
+export async function freelancerBrief(url: string): Promise<{ text: string; budget: string }> {
+  const empty = { text: "", budget: "" };
   let path = "";
   try {
     const parsed = new URL(url);
-    if (!parsed.hostname.endsWith("freelancer.com")) return "";
+    if (!parsed.hostname.endsWith("freelancer.com")) return empty;
     path = parsed.pathname.replace(/^\/projects\//, "").replace(/\/$/, "");
   } catch {
-    return "";
+    return empty;
   }
-  if (!path) return "";
+  if (!path) return empty;
   const endpoint =
     "https://www.freelancer.com/api/projects/0.1/projects/?limit=1&full_description=true&seo_urls[]=" +
     encodeURIComponent(path);
@@ -27,17 +28,32 @@ export async function freelancerBrief(url: string): Promise<string> {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(15_000),
   });
-  if (!response.ok) return "";
+  if (!response.ok) return empty;
   const body = (await response.json()) as {
-    result?: { projects?: { description?: string; preview_description?: string }[] };
+    result?: {
+      projects?: {
+        description?: string;
+        preview_description?: string;
+        budget?: { minimum?: number; maximum?: number };
+        currency?: { code?: string };
+      }[];
+    };
   };
   const project = body.result?.projects?.[0];
-  return String(project?.description || project?.preview_description || "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim()
-    .slice(0, 12000);
+  const minimum = project?.budget?.minimum;
+  const maximum = project?.budget?.maximum;
+  const currency = project?.currency?.code || "";
+  const budget =
+    minimum != null && maximum != null ? `${minimum}-${maximum} ${currency}`.trim() : "";
+  return {
+    budget,
+    text: String(project?.description || project?.preview_description || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+      .slice(0, 12000),
+  };
 }
 
 function listingBudget(value: unknown) {
