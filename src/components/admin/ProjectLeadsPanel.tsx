@@ -191,7 +191,7 @@ export function ProjectLeadsPanel({
                     [lead.id]: { ...draft, reply: event.target.value },
                   }))
                 }
-                rows={4}
+                rows={10}
                 className={`${input} mt-1`}
               />
             </label>
