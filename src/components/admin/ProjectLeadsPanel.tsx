@@ -21,7 +21,7 @@ type Lead = {
   createdAt: string;
 };
 
-type Filter = "new" | "sent" | "dismissed";
+type Filter = "new" | "bidded" | "sent" | "dismissed";
 
 const input =
   "w-full border border-mist/10 bg-deep px-3 py-2 text-sm text-bone outline-none focus:border-gold/40";
@@ -48,7 +48,6 @@ export function ProjectLeadsPanel({
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filter, setFilter] = useState<Filter>("new");
   const [drafts, setDrafts] = useState<Record<string, { email: string; reply: string }>>({});
-  const [mailersendConfigured, setMailersendConfigured] = useState(true);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
@@ -66,7 +65,6 @@ export function ProjectLeadsPanel({
       if (!res.ok) throw new Error(data.error || "Failed to load listings");
       const next = (data.leads ?? []) as Lead[];
       setLeads(next);
-      setMailersendConfigured(Boolean(data.mailersendConfigured));
       onNewCountRef.current(typeof data.newCount === "number" ? data.newCount : next.filter((lead) => lead.status === "new").length);
       setDrafts((current) => {
         const merged = { ...current };
@@ -134,20 +132,24 @@ export function ProjectLeadsPanel({
     }
   }
 
-  async function send(lead: Lead) {
+  async function markBidded(lead: Lead) {
     const draft = draftFor(lead);
-    setBusyId(`${lead.id}:send`);
-    setError("");
+    setBusyId(`${lead.id}:bid`);
+    setCardError((current) => ({ ...current, [lead.id]: "" }));
     try {
-      const res = await apiFetch("/api/admin/project-leads/send", {
-        method: "POST",
-        body: JSON.stringify({ id: lead.id, email: draft.email, reply: draft.reply }),
+      const res = await apiFetch("/api/admin/project-leads", {
+        method: "PATCH",
+        body: JSON.stringify({ id: lead.id, status: "bidded", reply: draft.reply }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Email could not be sent");
+      if (!res.ok) throw new Error(data.error || "Could not save the bid");
+      setFilter("bidded");
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Email could not be sent");
+      setCardError((current) => ({
+        ...current,
+        [lead.id]: err instanceof Error ? err.message : "Could not save the bid",
+      }));
     } finally {
       setBusyId("");
     }
@@ -161,11 +163,11 @@ export function ProjectLeadsPanel({
         <div>
           <h2 className="text-sm tracking-wider text-gold">PROJECT FINDER</h2>
           <p className="mt-1 text-xs text-mist/60">
-            Read the listing, then press Create response for a bid with a quote and timeline. Edit it before you send.
+            Read the listing, create the proposal, place it on Freelancer, then mark it as bidded.
           </p>
         </div>
         <div className="flex gap-2">
-          {(["new", "sent", "dismissed"] as const).map((status) => (
+          {(["new", "bidded", "sent", "dismissed"] as const).map((status) => (
             <button
               key={status}
               type="button"
@@ -178,11 +180,6 @@ export function ProjectLeadsPanel({
         </div>
       </div>
 
-      {!mailersendConfigured && (
-        <p className="text-sm text-gold">
-          MailerSend is not configured, so Send email will fail until the site has a sender.
-        </p>
-      )}
       {error && <p className="text-sm text-red-400">{error}</p>}
       {loading && <p className="text-sm text-mist/60">Loading listings…</p>}
 
@@ -241,7 +238,7 @@ export function ProjectLeadsPanel({
               )}
             </div>
             {cardError[lead.id] && <p className="text-sm text-red-400">{cardError[lead.id]}</p>}
-            {(opened[lead.id] || lead.status === "sent") && draft.reply.trim() && (
+            {(opened[lead.id] || lead.status === "sent" || lead.status === "bidded") && draft.reply.trim() && (
               <>
                 {(lead.quote || lead.timeline) && (
                   <p className="text-xs text-gold">
@@ -264,28 +261,15 @@ export function ProjectLeadsPanel({
                     className={`${input} mt-1`}
                   />
                 </label>
-                <label className="block text-[10px] tracking-wider text-mist/50">
-                  THEIR EMAIL
-                  <input
-                    value={draft.email}
-                    onChange={(event) =>
-                      setDrafts((current) => ({
-                        ...current,
-                        [lead.id]: { ...draft, email: event.target.value },
-                      }))
-                    }
-                    placeholder="Paste an email from the listing"
-                    className={`${input} mt-1`}
-                  />
-                </label>
                 <p className="text-[10px] text-mist/40">
                   Paste the bid amount, days, milestone and proposal into Freelancer. The proposal box needs at least 100 characters.
-                  Most posts do not include an email. Open the listing, copy one if it is there, then send.
-                  {lead.sentAt ? ` Sent ${new Date(lead.sentAt).toLocaleString("en-GB")}.` : ""}
+                  {lead.sentAt ? ` Saved ${new Date(lead.sentAt).toLocaleString("en-GB")}.` : ""}
                 </p>
-                <button type="button" disabled={busy} onClick={() => send(lead)} className="bg-gold px-3 py-2 text-xs tracking-wider text-deep disabled:opacity-50">
-                  {busyId === `${lead.id}:send` ? "SENDING" : "SEND EMAIL"}
-                </button>
+                {lead.status !== "bidded" && lead.status !== "sent" && (
+                  <button type="button" disabled={busy || !draft.reply.trim()} onClick={() => markBidded(lead)} className="bg-gold px-3 py-2 text-xs tracking-wider text-deep disabled:opacity-50">
+                    {busyId === `${lead.id}:bid` ? "SAVING" : "MARK AS BIDDED"}
+                  </button>
+                )}
               </>
             )}
           </article>

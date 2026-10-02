@@ -94,7 +94,8 @@ export const draftLeadInput = z
 export const leadStatusInput = z
   .object({
     id: z.string().trim().min(1).max(100),
-    status: z.enum(["new", "dismissed"]),
+    status: z.enum(["new", "dismissed", "bidded"]),
+    reply: z.string().trim().max(5000).optional(),
   })
   .strict();
 

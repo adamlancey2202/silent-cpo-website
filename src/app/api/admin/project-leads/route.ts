@@ -43,9 +43,16 @@ export async function PATCH(request: Request) {
     if (existing.status === "sent" && parsed.data.status === "dismissed") {
       return json({ error: "A sent reply stays in Sent." }, 400);
     }
+    if (parsed.data.status === "bidded" && !parsed.data.reply?.trim()) {
+      return json({ error: "Save a proposal before marking the listing as bidded." }, 400);
+    }
     const lead = await db.projectLead.update({
       where: { id: existing.id },
-      data: { status: parsed.data.status, ...(parsed.data.status === "new" ? { sentAt: null } : {}) },
+      data: {
+        status: parsed.data.status,
+        ...(parsed.data.status === "bidded" ? { reply: parsed.data.reply, sentAt: new Date() } : {}),
+        ...(parsed.data.status === "new" ? { sentAt: null } : {}),
+      },
     });
     return json(lead);
   } catch (error) {
