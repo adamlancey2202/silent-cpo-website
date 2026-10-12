@@ -42,7 +42,7 @@ export function NewsletterSignup({ source, className = "" }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: data.get("email"),
-          name: name || undefined,
+          name,
           source,
           turnstileToken: turnstileToken ?? undefined,
         }),
@@ -93,16 +93,17 @@ export function NewsletterSignup({ source, className = "" }: Props) {
                 htmlFor={`newsletter-name-${source}`}
                 className="mb-2 block text-[10px] tracking-[0.2em] text-gold"
               >
-                NAME
+                NAME *
               </label>
               <input
                 id={`newsletter-name-${source}`}
                 name="name"
                 type="text"
+                required
                 maxLength={100}
                 autoComplete="name"
                 className={inputClass}
-                placeholder="Optional"
+                placeholder="name"
               />
             </div>
             <div>
@@ -120,7 +121,7 @@ export function NewsletterSignup({ source, className = "" }: Props) {
                 maxLength={200}
                 autoComplete="email"
                 className={inputClass}
-                placeholder="you@company.com"
+                placeholder="email"
               />
             </div>
           </div>

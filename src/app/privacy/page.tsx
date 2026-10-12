@@ -31,7 +31,7 @@ const sections = [
   },
   {
     title: "What data we collect",
-    content: `When you contact us via the enquiry form, we collect: your name, email address, optional phone number, project type, optional budget range, and your message. When you sign up to the newsletter, we collect your email address, an optional name, and which page you signed up from. We may also collect technical data such as your IP address for security purposes (via Cloudflare Turnstile spam protection). We do not use cookies for tracking or advertising.`,
+    content: `When you contact us via the enquiry form, we collect: your name, email address, optional phone number, project type, optional budget range, and your message. When you sign up to the newsletter, we collect your name, email address, and which page you signed up from. We may also collect technical data such as your IP address for security purposes (via Cloudflare Turnstile spam protection). We do not use cookies for tracking or advertising.`,
   },
   {
     title: "Why we collect it",

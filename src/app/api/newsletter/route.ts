@@ -6,7 +6,7 @@ import { isTurnstileConfigured, verifyTurnstileToken } from "@/lib/turnstile";
 
 const signupSchema = z.object({
   email: z.string().trim().email().max(200),
-  name: z.string().trim().max(100).optional(),
+  name: z.string().trim().min(2).max(100),
   source: z.string().trim().max(120).optional(),
   turnstileToken: z.string().optional(),
 });
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Please enter a valid email address." },
+        { error: "Please enter your name and a valid email address." },
         { status: 400 }
       );
     }

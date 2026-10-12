@@ -154,7 +154,7 @@ export function StudioPanel({ apiFetch }: { apiFetch: Fetch }) {
     { id: "overview", label: "Overview" },
     { id: "projects", label: "Projects" },
     { id: "clients", label: "Clients" },
-    { id: "tasks", label: "Tasks" },
+    { id: "tasks", label: "My todos" },
     { id: "copilot", label: "Copilot" },
   ];
 
@@ -266,6 +266,118 @@ function Overview({
   );
 }
 
+type TaskViewMode = "list" | "kanban";
+
+function TaskKanbanBoard({
+  tasks,
+  pendingMoves,
+  onMove,
+  renderTaskFooter,
+}: {
+  tasks: StudioTaskView[];
+  pendingMoves: Record<string, string>;
+  onMove: (task: StudioTaskView, status: string) => void;
+  renderTaskFooter: (task: StudioTaskView) => React.ReactNode;
+}) {
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [overColumn, setOverColumn] = useState<string | null>(null);
+
+  function dropOn(status: string) {
+    const task = tasks.find((item) => item.id === draggingId);
+    setDraggingId(null);
+    setOverColumn(null);
+    if (task) onMove(task, status);
+  }
+
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+      {TASK_STATUSES.map((column) => {
+        const columnTasks = tasks.filter((task) => (pendingMoves[task.id] ?? task.status) === column.id);
+        return (
+          <div
+            key={column.id}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              if (overColumn !== column.id) setOverColumn(column.id);
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOverColumn(null);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              dropOn(column.id);
+            }}
+            className={`min-h-[120px] min-w-[220px] shrink-0 snap-start border p-2 transition sm:min-w-[240px] ${
+              overColumn === column.id ? "border-gold/60 bg-gold/5" : "border-mist/10"
+            }`}
+          >
+            <p className="mb-2 flex justify-between text-[10px] tracking-wider text-gold">
+              <span>{column.label.toUpperCase()}</span>
+              <span className="text-mist/40">{columnTasks.length}</span>
+            </p>
+            {columnTasks.map((task) => (
+              <div
+                key={task.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("text/plain", task.id);
+                  setDraggingId(task.id);
+                }}
+                onDragEnd={() => {
+                  setDraggingId(null);
+                  setOverColumn(null);
+                }}
+                className={`mb-2 cursor-grab border border-mist/10 bg-deep p-2 text-xs active:cursor-grabbing ${
+                  draggingId === task.id ? "opacity-40" : ""
+                }`}
+              >
+                {task.phase && <p className="text-[10px] text-mist/40">{task.phase}</p>}
+                <p className="text-bone">{task.title}</p>
+                {task.projectTitle && <p className="mt-1 text-[10px] text-mist/50">{task.projectTitle}</p>}
+                {task.dueDate && <p className="text-[10px] text-mist/40">Due {task.dueDate}</p>}
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <select
+                    aria-label="Move task"
+                    className="bg-transparent text-[10px] text-mist/50 outline-none md:hidden"
+                    value={pendingMoves[task.id] ?? task.status}
+                    onChange={(e) => onMove(task, e.target.value)}
+                  >
+                    {TASK_STATUSES.map((item) => (
+                      <option key={item.id} value={item.id}>{item.label}</option>
+                    ))}
+                  </select>
+                  {renderTaskFooter(task)}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TaskViewToggle({ mode, onChange }: { mode: TaskViewMode; onChange: (mode: TaskViewMode) => void }) {
+  return (
+    <div className="flex gap-1">
+      {(["list", "kanban"] as const).map((item) => (
+        <button
+          key={item}
+          type="button"
+          onClick={() => onChange(item)}
+          className={`px-2 py-1 text-[10px] tracking-wider ${
+            mode === item ? "bg-gold text-deep" : "border border-mist/10 text-mist/50 hover:text-bone"
+          }`}
+        >
+          {item === "list" ? "LIST" : "KANBAN"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Projects({
   data,
   selectedId,
@@ -285,9 +397,8 @@ function Projects({
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(() => (selected ? projectForm(selected) : emptyProject));
   const [taskTitle, setTaskTitle] = useState("");
+  const [taskViewMode, setTaskViewMode] = useState<TaskViewMode>("kanban");
   const [pendingMoves, setPendingMoves] = useState<Record<string, string>>({});
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [overColumn, setOverColumn] = useState<string | null>(null);
 
   function startCreate() {
     setCreating(true);
@@ -369,14 +480,8 @@ function Projects({
     }
   }
 
-  function dropOn(status: string) {
-    const task = selected?.tasks.find((item) => item.id === draggingId);
-    setDraggingId(null);
-    setOverColumn(null);
-    if (task) moveTask(task, status);
-  }
-
   const showForm = creating || selected;
+  const projectTasks = selected?.tasks ?? [];
 
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
@@ -478,85 +583,76 @@ function Projects({
         </form>
         {selected && (
           <div className="space-y-3 border border-mist/10 p-5">
-            <form onSubmit={addTask} className="flex gap-2">
-              <input className={input} value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="New task" />
-              <button className={button} type="submit">ADD</button>
-            </form>
-            <p className="text-[10px] text-mist/40">
-              Drag cards between columns. Tasks stay on this board until you add them to the Tasks tab.
-            </p>
-            <div className="grid gap-3 md:grid-cols-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <form onSubmit={addTask} className="flex min-w-0 flex-1 gap-2">
+                <input className={input} value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="New task" />
+                <button className={button} type="submit">ADD</button>
+              </form>
+              <TaskViewToggle mode={taskViewMode} onChange={setTaskViewMode} />
+            </div>
+            <div className="flex flex-wrap gap-2 text-[10px] text-mist/50">
               {TASK_STATUSES.map((column) => {
-                const columnTasks = selected.tasks.filter(
+                const count = projectTasks.filter(
                   (task) => (pendingMoves[task.id] ?? task.status) === column.id,
-                );
+                ).length;
                 return (
-                  <div
-                    key={column.id}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                      if (overColumn !== column.id) setOverColumn(column.id);
-                    }}
-                    onDragLeave={(e) => {
-                      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOverColumn(null);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      dropOn(column.id);
-                    }}
-                    className={`min-h-[120px] border p-2 transition ${
-                      overColumn === column.id ? "border-gold/60 bg-gold/5" : "border-mist/10"
-                    }`}
-                  >
-                    <p className="mb-2 flex justify-between text-[10px] tracking-wider text-gold">
-                      <span>{column.label.toUpperCase()}</span>
-                      <span className="text-mist/40">{columnTasks.length}</span>
-                    </p>
-                    {columnTasks.map((task) => (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.effectAllowed = "move";
-                          e.dataTransfer.setData("text/plain", task.id);
-                          setDraggingId(task.id);
-                        }}
-                        onDragEnd={() => {
-                          setDraggingId(null);
-                          setOverColumn(null);
-                        }}
-                        className={`mb-2 cursor-grab border border-mist/10 bg-deep p-2 text-xs active:cursor-grabbing ${
-                          draggingId === task.id ? "opacity-40" : ""
-                        }`}
-                      >
-                        {task.phase && <p className="text-[10px] text-mist/40">{task.phase}</p>}
-                        <p className="text-bone">{task.title}</p>
-                        <div className="mt-2 flex items-center justify-between gap-2">
-                          <select
-                            aria-label="Move task"
-                            className="bg-transparent text-[10px] text-mist/50 outline-none md:hidden"
-                            value={pendingMoves[task.id] ?? task.status}
-                            onChange={(e) => moveTask(task, e.target.value)}
-                          >
-                            {TASK_STATUSES.map((item) => (
-                              <option key={item.id} value={item.id}>{item.label}</option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            className={`ml-auto text-[10px] ${task.onTaskList ? "text-green" : "text-mist/50 hover:text-gold"}`}
-                            onClick={() => toggleTaskList(task)}
-                          >
-                            {task.onTaskList ? "On Tasks tab ✓" : "+ Tasks tab"}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <span key={column.id} className="border border-mist/10 px-2 py-0.5">
+                    {column.label}: <span className="text-bone">{count}</span>
+                  </span>
                 );
               })}
             </div>
+            <p className="text-[10px] text-mist/40">
+              {taskViewMode === "kanban"
+                ? "Drag cards between columns. Column counts and overview stats update when you move a task."
+                : "Tasks stay on this board until you add them to My todos."}
+            </p>
+            {taskViewMode === "kanban" ? (
+              <TaskKanbanBoard
+                tasks={projectTasks}
+                pendingMoves={pendingMoves}
+                onMove={moveTask}
+                renderTaskFooter={(task) => (
+                  <button
+                    type="button"
+                    className={`ml-auto text-[10px] ${task.onTaskList ? "text-green" : "text-mist/50 hover:text-gold"}`}
+                    onClick={() => toggleTaskList(task)}
+                  >
+                    {task.onTaskList ? "On My todos ✓" : "+ My todos"}
+                  </button>
+                )}
+              />
+            ) : (
+              <div className="space-y-2">
+                {projectTasks.length === 0 && <p className="text-sm text-mist/60">No tasks yet.</p>}
+                {projectTasks.map((task) => (
+                  <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 border border-mist/10 px-3 py-2">
+                    <div>
+                      {task.phase && <p className="text-[10px] text-mist/40">{task.phase}</p>}
+                      <p className="text-sm text-bone">{task.title}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        className={input + " max-w-[140px] py-1 text-xs"}
+                        value={pendingMoves[task.id] ?? task.status}
+                        onChange={(e) => moveTask(task, e.target.value)}
+                      >
+                        {TASK_STATUSES.map((status) => (
+                          <option key={status.id} value={status.id}>{status.label}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className={`text-[10px] ${task.onTaskList ? "text-green" : "text-mist/50 hover:text-gold"}`}
+                        onClick={() => toggleTaskList(task)}
+                      >
+                        {task.onTaskList ? "On My todos ✓" : "+ My todos"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
         </div>
@@ -632,6 +728,13 @@ function Clients({
   );
 }
 
+const MY_TODOS_VIEW_KEY = "studio-my-todos-view";
+
+function readMyTodosViewMode(): TaskViewMode {
+  if (typeof window === "undefined") return "kanban";
+  return window.localStorage.getItem(MY_TODOS_VIEW_KEY) === "list" ? "list" : "kanban";
+}
+
 function Tasks({
   data,
   onError,
@@ -641,26 +744,46 @@ function Tasks({
   onError: (message: string) => void;
   mutate: (method: "POST" | "PATCH" | "DELETE", body?: unknown, query?: string) => Promise<unknown>;
 }) {
-  const tasks = [
-    ...data.projects.flatMap((project) => project.tasks.filter((task) => task.onTaskList)),
-    ...data.looseTasks,
-  ];
+  const tasks = data.looseTasks;
+  const projectTasks = data.projects.flatMap((project) =>
+    project.tasks.filter((task) => task.onTaskList),
+  );
   const [title, setTitle] = useState("");
-  const [projectId, setProjectId] = useState("");
   const [priority, setPriority] = useState("medium");
   const [dueDate, setDueDate] = useState("");
+  const [showExtras, setShowExtras] = useState(false);
+  const [taskViewMode, setTaskViewMode] = useState<TaskViewMode>(() => readMyTodosViewMode());
+  const [pendingMoves, setPendingMoves] = useState<Record<string, string>>({});
+
+  function setViewMode(mode: TaskViewMode) {
+    setTaskViewMode(mode);
+    if (typeof window !== "undefined") window.localStorage.setItem(MY_TODOS_VIEW_KEY, mode);
+  }
+
+  async function moveTask(task: StudioTaskView, status: string) {
+    if (task.status === status && !pendingMoves[task.id]) return;
+    onError("");
+    setPendingMoves((moves) => ({ ...moves, [task.id]: status }));
+    try {
+      await mutate("PATCH", { entity: "task", id: task.id, status });
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Could not move task");
+    } finally {
+      setPendingMoves(({ [task.id]: _done, ...rest }) => rest);
+    }
+  }
 
   async function create(event: React.FormEvent) {
     event.preventDefault();
+    if (!title.trim()) return;
     onError("");
     try {
       await mutate("POST", {
         entity: "task",
-        title,
-        projectId: projectId || null,
+        title: title.trim(),
+        projectId: null,
         priority,
         dueDate,
-        onTaskList: true,
       });
       setTitle("");
     } catch (err) {
@@ -670,45 +793,92 @@ function Tasks({
 
   return (
     <div className="space-y-4">
-      <form onSubmit={create} className="grid gap-2 border border-mist/10 p-4 sm:grid-cols-4">
-        <input className={input} required placeholder="Task" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <select className={input} value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-          <option value="">No project</option>
-          {data.projects.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
-        </select>
-        <select className={input} value={priority} onChange={(e) => setPriority(e.target.value)}>
-          {TASK_PRIORITIES.map((item) => <option key={item} value={item}>{item}</option>)}
-        </select>
-        <input className={input} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-        <button className="bg-gold px-4 py-2 text-xs tracking-wider text-deep sm:col-span-4" type="submit">ADD TASK</button>
-      </form>
-      {tasks.length === 0 && (
-        <p className="text-sm text-mist/60">
-          Nothing here yet. Add a task above, or use “+ Tasks tab” on a project board card.
-        </p>
-      )}
-      {tasks.map((task) => (
-        <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 border border-mist/10 px-4 py-3">
-          <div>
-            <p className="text-sm text-bone">{task.title}</p>
-            <p className="text-xs text-mist/50">{task.projectTitle || "No project"}{task.dueDate ? ` · due ${task.dueDate}` : ""}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <select
-              className={input + " max-w-[160px]"}
-              value={task.status}
-              onChange={(e) => mutate("PATCH", { entity: "task", id: task.id, status: e.target.value }).catch((err) => onError(err.message))}
-            >
-              {TASK_STATUSES.map((status) => <option key={status.id} value={status.id}>{status.label}</option>)}
+      <div className="flex flex-wrap items-center justify-between gap-3 border border-mist/10 p-4">
+        <div>
+          <p className="text-xs tracking-wider text-gold">MY TODOS</p>
+          <p className="mt-1 text-[10px] text-mist/50">Personal tasks — not tied to any client project.</p>
+        </div>
+        <TaskViewToggle mode={taskViewMode} onChange={setViewMode} />
+      </div>
+      <form onSubmit={create} className="space-y-2 border border-mist/10 p-4">
+        <div className="flex gap-2">
+          <input
+            className={input}
+            required
+            placeholder="What do you need to do?"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <button className="shrink-0 bg-gold px-4 py-2 text-xs tracking-wider text-deep" type="submit">ADD</button>
+        </div>
+        <button
+          type="button"
+          className="text-[10px] tracking-wider text-mist/50 hover:text-gold"
+          onClick={() => setShowExtras((open) => !open)}
+        >
+          {showExtras ? "HIDE" : "SHOW"} PRIORITY & DUE DATE
+        </button>
+        {showExtras && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <select className={input} value={priority} onChange={(e) => setPriority(e.target.value)}>
+              {TASK_PRIORITIES.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
-            {task.projectId ? (
-              <button
-                className="text-xs text-mist/40 hover:text-gold"
-                onClick={() => mutate("PATCH", { entity: "task", id: task.id, onTaskList: false }).catch((err) => onError(err.message))}
+            <input className={input} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </div>
+        )}
+      </form>
+      {tasks.length > 0 && (
+        <div className="flex flex-wrap gap-2 text-[10px] text-mist/50">
+          {TASK_STATUSES.map((column) => {
+            const count = tasks.filter((task) => (pendingMoves[task.id] ?? task.status) === column.id).length;
+            return (
+              <span key={column.id} className="border border-mist/10 px-2 py-0.5">
+                {column.label}: <span className="text-bone">{count}</span>
+              </span>
+            );
+          })}
+        </div>
+      )}
+      {tasks.length === 0 && (
+        <p className="text-sm text-mist/60">Nothing here yet. Add a personal todo above, then switch to KANBAN to drag cards between columns.</p>
+      )}
+      {taskViewMode === "kanban" && tasks.length > 0 && (
+        <TaskKanbanBoard
+          tasks={tasks}
+          pendingMoves={pendingMoves}
+          onMove={moveTask}
+          renderTaskFooter={(task) => (
+            <button
+              type="button"
+              className="ml-auto text-[10px] text-mist/50 hover:text-red-400"
+              onClick={() => {
+                if (!confirm(`Delete “${task.title}”?`)) return;
+                mutate("DELETE", undefined, `?entity=task&id=${task.id}`).catch((err) => onError(err.message));
+              }}
+            >
+              Delete
+            </button>
+          )}
+        />
+      )}
+      {taskViewMode === "list" &&
+        tasks.map((task) => (
+          <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 border border-mist/10 px-4 py-3">
+            <div>
+              <p className="text-sm text-bone">{task.title}</p>
+              <p className="text-xs text-mist/50">
+                {task.priority !== "medium" ? `${task.priority} · ` : ""}
+                {task.dueDate ? `due ${task.dueDate}` : "No due date"}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <select
+                className={input + " max-w-[160px]"}
+                value={pendingMoves[task.id] ?? task.status}
+                onChange={(e) => moveTask(task, e.target.value)}
               >
-                Back to project
-              </button>
-            ) : (
+                {TASK_STATUSES.map((status) => <option key={status.id} value={status.id}>{status.label}</option>)}
+              </select>
               <button
                 className="text-xs text-mist/40 hover:text-red-400"
                 onClick={() => {
@@ -718,10 +888,29 @@ function Tasks({
               >
                 Delete
               </button>
-            )}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      {projectTasks.length > 0 && (
+        <section className="space-y-2 border border-mist/10 p-4">
+          <p className="text-[10px] tracking-wider text-mist/50">FROM PROJECT BOARDS</p>
+          <p className="text-xs text-mist/60">These are linked to a project. Open the project or remove them with “Back to project”.</p>
+          {projectTasks.map((task) => (
+            <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 border border-mist/10 px-3 py-2">
+              <div>
+                <p className="text-sm text-bone">{task.title}</p>
+                <p className="text-xs text-mist/50">{task.projectTitle}</p>
+              </div>
+              <button
+                className="text-xs text-mist/40 hover:text-gold"
+                onClick={() => mutate("PATCH", { entity: "task", id: task.id, onTaskList: false }).catch((err) => onError(err.message))}
+              >
+                Back to project
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
     </div>
   );
 }
